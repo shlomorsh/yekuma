@@ -47,18 +47,46 @@ export default function Home() {
       try {
         setAuthLoading(true);
         
-        // Handle magic link callback from URL hash
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        const errorParam = hashParams.get('error');
-        const errorDescription = hashParams.get('error_description');
+        // Handle magic link callback from URL hash or query params
+        // Check both hash (direct) and query params (Google redirect)
+        const hash = window.location.hash.substring(1);
+        const search = window.location.search.substring(1);
+        
+        // Try to get tokens from hash first, then from query params
+        let hashParams = new URLSearchParams(hash);
+        let searchParams = new URLSearchParams(search);
+        
+        // Check if there's a redirect URL in query (from Google)
+        const redirectUrl = searchParams.get('q') || searchParams.get('url');
+        if (redirectUrl) {
+          // Extract tokens from the redirected URL
+          try {
+            const url = new URL(decodeURIComponent(redirectUrl));
+            const token = url.searchParams.get('token');
+            const type = url.searchParams.get('type');
+            const redirectTo = url.searchParams.get('redirect_to');
+            
+            if (token && type === 'magiclink') {
+              // This is a magic link - redirect to Supabase verify endpoint
+              const verifyUrl = `${url.origin}${url.pathname}?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirectTo || 'https://yekuma.vercel.app/')}`;
+              window.location.href = verifyUrl;
+              return;
+            }
+          } catch (e) {
+            console.error('Error parsing redirect URL:', e);
+          }
+        }
+        
+        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+        const errorParam = hashParams.get('error') || searchParams.get('error');
+        const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
         
         // If there's an error in the URL, show it
         if (errorParam) {
           console.error('Auth error:', errorParam, errorDescription);
           alert(`שגיאת התחברות: ${errorDescription || errorParam}`);
-          // Clear the hash
+          // Clear the hash/query
           window.history.replaceState(null, '', window.location.pathname);
           setAuthLoading(false);
           return;
@@ -76,20 +104,24 @@ export default function Home() {
             
             if (sessionError) {
               console.error('Error setting session:', sessionError);
+              alert('שגיאה בהתחברות: ' + sessionError.message);
             } else if (sessionData?.session) {
               console.log('Session set successfully');
               setUser(sessionData.session.user);
               await fetchUserProfile(sessionData.session.user.id);
+              // Show success message
+              alert('התחברת בהצלחה!');
             }
           } catch (err) {
             console.error('Error in setSession:', err);
+            alert('שגיאה בלתי צפויה בהתחברות');
           }
           
           // Wait a moment for Supabase to process
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Clear URL hash after processing
-          if (window.location.hash) {
+          // Clear URL hash/query after processing
+          if (window.location.hash || window.location.search) {
             window.history.replaceState(null, '', window.location.pathname);
           }
         }

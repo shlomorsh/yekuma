@@ -708,7 +708,7 @@ export default function ChapterPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email: loginEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
+          emailRedirectTo: 'https://yekuma.vercel.app/',
           shouldCreateUser: true,
         },
       });
