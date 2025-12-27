@@ -214,12 +214,19 @@ export default function Home() {
         console.log('Fetching chapters...');
         
         // Fetch chapters
+        console.log('Attempting to fetch chapters from Supabase...');
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
           .select('*')
           .order('order_index', { ascending: true });
         
-        console.log('Chapters data:', chaptersData, 'Error:', chaptersError);
+        console.log('Chapters query result:', {
+          data: chaptersData,
+          error: chaptersError,
+          dataLength: chaptersData?.length,
+          errorCode: chaptersError?.code,
+          errorMessage: chaptersError?.message
+        });
 
         if (chaptersError) {
           console.error('Error fetching chapters:', chaptersError);
