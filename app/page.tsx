@@ -213,12 +213,33 @@ export default function Home() {
         setLoading(true);
         console.log('Fetching chapters...');
         
-        // Fetch chapters
+        // Fetch chapters with timeout
         console.log('Attempting to fetch chapters from Supabase...');
-        const { data: chaptersData, error: chaptersError } = await supabase
+        
+        // Create a promise with timeout
+        const fetchPromise = supabase
           .from('chapters')
           .select('*')
           .order('order_index', { ascending: true });
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000)
+        );
+        
+        let chaptersData, chaptersError;
+        try {
+          const result = await Promise.race([fetchPromise, timeoutPromise]);
+          chaptersData = result.data;
+          chaptersError = result.error;
+        } catch (err: any) {
+          console.error('Chapters fetch error or timeout:', err);
+          chaptersError = { 
+            message: err.message || 'Unknown error',
+            code: 'TIMEOUT',
+            details: err
+          };
+          chaptersData = null;
+        }
         
         console.log('Chapters query result:', {
           data: chaptersData,
@@ -273,7 +294,7 @@ export default function Home() {
         } catch (err) {
           console.warn('Wiki stats not available yet');
         }
-      } catch (err) {
+    } catch (err) {
         console.error('Unexpected error fetching data:', err);
         // Set fallback chapters on error
         setChapters([
@@ -284,7 +305,7 @@ export default function Home() {
           { id: '5', title: 'פרק 5', description: 'פרק חמישי של יקומות', video_url: 'https://www.youtube.com/watch?v=oYljFReoQbc', order_index: 4, created_at: new Date().toISOString() },
           { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
         ]);
-      } finally {
+    } finally {
         console.log('Finished fetching, setting loading to false');
         setLoading(false);
       }
