@@ -30,9 +30,31 @@ export default function GunCursor() {
         window.removeEventListener('resize', checkDevice);
       };
     } else {
-      // Mobile: Handle touch
-      const handleTouch = (e: TouchEvent) => {
-        const touch = e.touches[0] || e.changedTouches[0];
+      // Mobile: Handle touch - track continuously during drag
+      const handleTouchStart = (e: TouchEvent) => {
+        const touch = e.touches[0];
+        if (touch) {
+          setTouchPosition({
+            x: touch.clientX,
+            y: touch.clientY,
+            visible: true,
+          });
+        }
+      };
+
+      const handleTouchMove = (e: TouchEvent) => {
+        const touch = e.touches[0];
+        if (touch) {
+          setTouchPosition({
+            x: touch.clientX,
+            y: touch.clientY,
+            visible: true,
+          });
+        }
+      };
+
+      const handleTouchEnd = (e: TouchEvent) => {
+        const touch = e.changedTouches[0];
         if (touch) {
           setTouchPosition({
             x: touch.clientX,
@@ -43,26 +65,45 @@ export default function GunCursor() {
           // Hide after animation
           setTimeout(() => {
             setTouchPosition(prev => prev ? { ...prev, visible: false } : null);
-          }, 700);
+          }, 300);
         }
       };
       
-      window.addEventListener('touchstart', handleTouch);
-      window.addEventListener('touchend', handleTouch);
+      window.addEventListener('touchstart', handleTouchStart, { passive: true });
+      window.addEventListener('touchmove', handleTouchMove, { passive: true });
+      window.addEventListener('touchend', handleTouchEnd, { passive: true });
       
       return () => {
-        window.removeEventListener('touchstart', handleTouch);
-        window.removeEventListener('touchend', handleTouch);
+        window.removeEventListener('touchstart', handleTouchStart);
+        window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
         window.removeEventListener('resize', checkDevice);
       };
     }
   }, [isDesktop]);
 
-  if (!isDesktop && !touchPosition?.visible) {
+  // Also track mouse on mobile devices that support both (like tablets)
+  useEffect(() => {
+    if (!isDesktop) {
+      const handleMouseMove = (e: MouseEvent) => {
+        // Only update if mouse is actually moving (not just hovering)
+        setMousePosition({ x: e.clientX, y: e.clientY });
+      };
+      
+      window.addEventListener('mousemove', handleMouseMove);
+      
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+      };
+    }
+  }, [isDesktop]);
+
+  // Use touch position if available, otherwise use mouse position
+  const position = touchPosition?.visible ? touchPosition : mousePosition;
+
+  if (!isDesktop && !touchPosition?.visible && mousePosition.x === 0 && mousePosition.y === 0) {
     return null;
   }
-
-  const position = isDesktop ? mousePosition : (touchPosition || { x: 0, y: 0 });
 
   return (
     <>
@@ -79,7 +120,7 @@ export default function GunCursor() {
           pointerEvents: 'none',
           zIndex: 9999,
           opacity: touchPosition && !touchPosition.visible ? 0 : 1,
-          transition: isDesktop ? 'none' : 'opacity 0.7s ease-out',
+          transition: isDesktop ? 'none' : (touchPosition?.visible ? 'none' : 'opacity 0.3s ease-out'),
         }}
       >
         {/* Gun image - flipped horizontally to point left to right */}
@@ -102,4 +143,3 @@ export default function GunCursor() {
     </>
   );
 }
-
