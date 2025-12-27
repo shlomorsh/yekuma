@@ -28,6 +28,37 @@ interface Reference {
   chapter_id: string;
 }
 
+// Parse markdown content to extract sections
+function parseContent(content: string | null) {
+  if (!content) return {};
+  
+  const sections: Record<string, string> = {};
+  const lines = content.split('\n');
+  let currentSection = '';
+  let currentContent: string[] = [];
+  
+  for (const line of lines) {
+    if (line.startsWith('## ')) {
+      if (currentSection) {
+        sections[currentSection] = currentContent.join('\n').trim();
+      }
+      currentSection = line.replace('## ', '').trim();
+      currentContent = [];
+    } else if (line.startsWith('# ')) {
+      // Skip main title
+      continue;
+    } else if (line.trim()) {
+      currentContent.push(line.trim());
+    }
+  }
+  
+  if (currentSection) {
+    sections[currentSection] = currentContent.join('\n').trim();
+  }
+  
+  return sections;
+}
+
 export default function CharacterPage() {
   const params = useParams();
   const router = useRouter();
@@ -113,34 +144,13 @@ export default function CharacterPage() {
   const fetchAvailableReferences = async () => {
     setLoadingRefs(true);
     try {
-      const { data: refsData } = await supabase
+      const { data } = await supabase
         .from('references')
         .select('id, timestamp, title, chapter_id')
         .order('timestamp', { ascending: true });
 
-      if (refsData) {
-        // Get chapters for display
-        const chapterIds = [...new Set(refsData.map(r => r.chapter_id).filter(Boolean))];
-        const { data: chaptersData } = await supabase
-          .from('chapters')
-          .select('id, title')
-          .in('id', chapterIds);
-
-        const chaptersMap: Record<string, string> = {};
-        if (chaptersData) {
-          chaptersData.forEach(ch => {
-            chaptersMap[ch.id] = ch.title;
-          });
-        }
-
-        const refsWithChapters = refsData.map(ref => ({
-          ...ref,
-          chapter_title: ref.chapter_id ? chaptersMap[ref.chapter_id] : 'לא ידוע'
-        }));
-
-        // Filter out already linked references
-        const linkedRefIds = references.map(r => r.id);
-        setAvailableRefs(refsWithChapters.filter(r => !linkedRefIds.includes(r.id)));
+      if (data) {
+        setAvailableRefs(data);
       }
     } catch (err) {
       console.error('Error fetching references:', err);
@@ -280,7 +290,7 @@ export default function CharacterPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
@@ -290,10 +300,10 @@ export default function CharacterPage() {
 
   if (!character) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
-          <p className="text-xl text-zinc-400 mb-4">דמות לא נמצאה</p>
-          <Link href="/characters" className="text-blue-400 hover:text-blue-300">
+          <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>דמות לא נמצאה</p>
+          <Link href="/characters" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
             חזרה לרשימת הדמויות
           </Link>
         </div>
@@ -301,41 +311,28 @@ export default function CharacterPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(30)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-blue-500/10"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 3 + 1}px`,
-              height: `${Math.random() * 3 + 1}px`,
-            }}
-          />
-        ))}
-      </div>
+  const contentSections = parseContent(character.content);
 
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-6xl">
+  return (
+    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/characters" className="text-blue-400 hover:text-blue-300 mb-4 inline-block">
+          <Link href="/characters" className="wireframe-border px-3 py-1 mb-4 inline-block" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
             ← חזרה לדמויות
           </Link>
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-5xl font-bold mb-4 glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
                 {character.title}
               </h1>
               {character.description && (
-                <p className="text-xl text-zinc-400 mb-4">{character.description}</p>
+                <p className="text-xl mb-4" style={{ color: '#FFFFFF', opacity: 0.7 }}>{character.description}</p>
               )}
-              <div className="flex items-center gap-4 text-sm text-zinc-500">
+              <div className="flex items-center gap-4 text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
                 <span>{character.view_count || 0} צפיות</span>
                 {character.verified && (
-                  <span className="flex items-center gap-1 text-yellow-400">
+                  <span className="flex items-center gap-1" style={{ color: '#FF6B00' }}>
                     <span>⭐</span>
                     <span>מאומת</span>
                   </span>
@@ -349,20 +346,21 @@ export default function CharacterPage() {
                     setShowLinkRefModal(true);
                     fetchAvailableReferences();
                   }}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="control-panel-btn"
                 >
                   קשר רפרנס
                 </button>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="control-panel-btn"
                 >
                   {isEditing ? 'בטל עריכה' : 'ערוך'}
                 </button>
                 {character.created_by === user.id && (
                   <button
                     onClick={handleDeleteCharacter}
-                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                    className="wireframe-border px-6 py-3 bg-black text-red-400 hover:bg-red-400/10 transition-colors"
+                    style={{ fontFamily: 'var(--font-mono)' }}
                   >
                     🗑️ מחק
                   </button>
@@ -374,21 +372,22 @@ export default function CharacterPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             {isEditing ? (
-              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800">
-                <h2 className="text-2xl font-bold mb-4">עריכת תוכן</h2>
+              <div className="wireframe-border p-6 bg-transparent">
+                <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>עריכת תוכן</h2>
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   rows={20}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none resize-none"
+                  style={{ fontFamily: 'var(--font-mono)' }}
                   placeholder="הכנס תוכן כאן..."
                 />
                 <div className="flex gap-3 mt-4">
                   <button
                     onClick={handleSaveEdit}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+                    className="control-panel-btn"
                   >
                     שמור
                   </button>
@@ -397,45 +396,79 @@ export default function CharacterPage() {
                       setIsEditing(false);
                       setEditContent(character.content || '');
                     }}
-                    className="bg-zinc-700 hover:bg-zinc-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+                    className="wireframe-border px-6 py-2 bg-black text-white hover:bg-white/10 transition-colors"
+                    style={{ fontFamily: 'var(--font-mono)' }}
                   >
                     ביטול
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-8 border border-zinc-800">
-                {character.content ? (
-                  <div 
-                    className="prose prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: character.content }}
-                  />
+              <div className="space-y-6">
+                {/* Image */}
+                {character.image_url && (
+                  <div className="wireframe-border p-4 bg-transparent">
+                    <div className="relative aspect-square w-full max-w-md mx-auto">
+                      <Image
+                        src={character.image_url}
+                        alt={character.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Content Sections */}
+                {Object.keys(contentSections).length > 0 ? (
+                  <div className="space-y-6">
+                    {Object.entries(contentSections).map(([section, content]) => (
+                      <div key={section} className="wireframe-border p-6 bg-transparent">
+                        <h2 className="text-2xl font-bold mb-4 glitch-text" style={{ color: '#FF6B00', fontFamily: 'var(--font-heebo)' }}>
+                          {section}
+                        </h2>
+                        <div className="space-y-3" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
+                          {content.split('\n').map((line, i) => (
+                            <p key={i} style={{ opacity: 0.9, lineHeight: '1.8' }}>
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-zinc-400">אין תוכן עדיין. {user && 'לחץ על "ערוך" כדי להוסיף תוכן.'}</p>
+                  <div className="wireframe-border p-6 bg-transparent">
+                    <p style={{ color: '#FFFFFF', opacity: 0.7, fontFamily: 'var(--font-heebo)' }}>
+                      אין תוכן עדיין. {user && 'לחץ על "ערוך" כדי להוסיף תוכן.'}
+                    </p>
+                  </div>
                 )}
               </div>
             )}
 
             {/* Connected References */}
             {references.length > 0 && (
-              <div className="mt-8 bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800">
-                <h2 className="text-2xl font-bold mb-4">רפרנסים קשורים</h2>
+              <div className="wireframe-border p-6 bg-transparent">
+                <h2 className="text-2xl font-bold mb-4 glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
+                  רפרנסים קשורים
+                </h2>
                 <div className="space-y-2">
                   {references.map((ref) => (
                     <Link
                       key={ref.id}
                       href={`/chapter/${ref.chapter_id}?ref=${ref.id}&time=${ref.timestamp}`}
                       target="_blank"
-                      className="block bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700 rounded-lg p-4 transition-colors"
+                      className="block wireframe-border p-4 bg-transparent hover:bg-white/5 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-white font-medium">{ref.title}</div>
-                          <div className="text-sm text-zinc-400 mt-1">
+                          <div className="font-medium mb-1" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>{ref.title}</div>
+                          <div className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
                             {Math.floor(ref.timestamp / 60)}:{(ref.timestamp % 60).toString().padStart(2, '0')}
                           </div>
                         </div>
-                        <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                       </div>
@@ -447,10 +480,10 @@ export default function CharacterPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-800 sticky top-8">
-              {character.image_url ? (
-                <div className="relative aspect-square rounded-xl overflow-hidden mb-4">
+          <div className="lg:col-span-1 space-y-6">
+            {character.image_url && (
+              <div className="wireframe-border p-4 bg-transparent">
+                <div className="relative aspect-square w-full">
                   <Image
                     src={character.image_url}
                     alt={character.title}
@@ -458,95 +491,51 @@ export default function CharacterPage() {
                     className="object-cover"
                   />
                 </div>
-              ) : (
-                <div className="aspect-square bg-gradient-to-br from-zinc-900 to-black rounded-xl flex items-center justify-center mb-4">
-                  <svg className="w-24 h-24 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-              )}
-              
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-zinc-400 mb-2">מידע</h3>
-                  <div className="text-sm text-zinc-300 space-y-1">
-                    <div>נוצר: {new Date(character.created_at).toLocaleDateString('he-IL')}</div>
-                    {character.updated_at && (
-                      <div>עודכן: {new Date(character.updated_at).toLocaleDateString('he-IL')}</div>
-                    )}
-                  </div>
-                </div>
-
-                {character.links && character.links.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-zinc-400 mb-2">קישורים</h3>
-                    <div className="space-y-1">
-                      {character.links.map((link: any, index: number) => (
-                        <a
-                          key={index}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-sm text-blue-400 hover:text-blue-300"
-                        >
-                          {link.title || link.url}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Link Reference Modal */}
       {showLinkRefModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-800 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" style={{ fontFamily: 'var(--font-heebo)' }}>
+          <div className="wireframe-border p-6 bg-black w-full max-w-2xl max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-white">בחר רפרנס לקישור</h2>
+              <h2 className="text-2xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>בחר רפרנס לקישור</h2>
               <button
                 onClick={() => setShowLinkRefModal(false)}
-                className="text-zinc-400 hover:text-white transition-colors"
+                className="text-white hover:text-red-400 transition-colors"
+                style={{ fontFamily: 'var(--font-mono)' }}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                ✕
               </button>
             </div>
             {loadingRefs ? (
-              <div className="text-center py-8 text-zinc-400">
+              <div className="text-center py-8" style={{ color: '#FFFFFF' }}>
                 טוען רפרנסים...
               </div>
             ) : (
-              <div className="overflow-y-auto flex-1 space-y-2">
-                {availableRefs.length === 0 ? (
-                  <div className="text-center py-8 text-zinc-400">
-                    אין רפרנסים זמינים או שכולם כבר מקושרים
-                  </div>
-                ) : (
-                  availableRefs.map((ref) => (
-                    <button
-                      key={ref.id}
-                      onClick={() => handleLinkReference(ref.id)}
-                      className="w-full text-right bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700 rounded-lg p-4 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-white font-medium">{ref.title}</div>
-                          <div className="text-sm text-zinc-400 mt-1">
-                            {ref.chapter_title} • {Math.floor(ref.timestamp / 60)}:{(ref.timestamp % 60).toString().padStart(2, '0')}
-                          </div>
+              <div className="space-y-2">
+                {availableRefs.map((ref) => (
+                  <button
+                    key={ref.id}
+                    onClick={() => handleLinkReference(ref.id)}
+                    className="w-full text-right wireframe-border p-4 bg-transparent hover:bg-white/5 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium mb-1" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>{ref.title}</div>
+                        <div className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
+                          {Math.floor(ref.timestamp / 60)}:{(ref.timestamp % 60).toString().padStart(2, '0')}
                         </div>
-                        <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
                       </div>
-                    </button>
-                  ))
-                )}
+                      <svg className="w-5 h-5" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -555,4 +544,3 @@ export default function CharacterPage() {
     </div>
   );
 }
-

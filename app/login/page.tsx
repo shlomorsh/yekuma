@@ -77,44 +77,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(100)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 3 + 1}px`,
-              height: `${Math.random() * 3 + 1}px`,
-              opacity: Math.random() * 0.5 + 0.2,
-              animation: `twinkle ${Math.random() * 3 + 2}s infinite`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Gradient Orbs */}
-      <div className="fixed w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" style={{ left: '50%', top: '20%', transform: 'translate(-50%, -50%)' }} />
-      <div className="fixed w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" style={{ left: '30%', top: '70%', transform: 'translate(-50%, -50%)' }} />
-
+    <div className="min-h-screen bg-black text-white flex items-center justify-center relative overflow-hidden" style={{ fontFamily: 'var(--font-heebo)' }}>
       <div className="relative z-10 w-full max-w-md px-4">
-        <div className="bg-zinc-900/50 backdrop-blur-sm rounded-2xl p-8 border border-zinc-800 shadow-2xl">
+        <div className="wireframe-border p-8 bg-transparent">
           <div className="text-center mb-8">
-            <Link href="/" className="text-blue-400 hover:text-blue-300 mb-4 inline-block">
+            <Link href="/" className="wireframe-border px-3 py-1 mb-4 inline-block" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
               ← חזרה לדף הבית
             </Link>
-            <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold mb-2 glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
               התחברות
             </h1>
-            <p className="text-zinc-400">התחבר כדי להוסיף תוכן ולצבור נקודות</p>
+            <p className="mt-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>
+              התחבר כדי להוסיף תוכן ולצבור נקודות
+            </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
                 כתובת אימייל
               </label>
               <input
@@ -125,13 +105,14 @@ export default function LoginPage() {
                   setMessage("");
                 }}
                 placeholder="הכנס את כתובת האימייל שלך"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-black wireframe-border px-4 py-3 text-white focus:outline-none"
+                style={{ fontFamily: 'var(--font-heebo)' }}
                 required
               />
             </div>
 
             {message && (
-              <p className={`text-sm text-center ${message.includes("בדוק") ? "text-green-400" : "text-red-400"}`}>
+              <p className={`text-sm text-center ${message.includes("בדוק") ? "text-green-400" : "text-red-400"}`} style={{ fontFamily: 'var(--font-mono)' }}>
                 {message}
               </p>
             )}
@@ -139,26 +120,18 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="w-full control-panel-btn disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "שולח..." : "שלח קישור התחברות"}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-zinc-400">
+          <div className="mt-6 text-center text-sm" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>
             <p>נשלח לך קישור התחברות באימייל</p>
             <p className="mt-2">לחץ על הקישור כדי להתחבר</p>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes twinkle {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }
-
