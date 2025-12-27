@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
+const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as React.ComponentType<any>;
 
 interface Reference {
   id: string;
@@ -502,7 +502,7 @@ export default function ChapterPage() {
           .eq('id', user.id)
           .maybeSingle();
 
-        const profile = profileData || {};
+        const profile = profileData as { username?: string; points?: number } | null;
         const newReference: Reference = {
           id: data.id.toString(),
           timestamp: data.timestamp,
@@ -510,8 +510,8 @@ export default function ChapterPage() {
           description: data.description || '',
           imageUrl: data.image_url || "https://via.placeholder.com/400x300/1f2937/9ca3af?text=רפרנס",
           userId: data.user_id,
-          username: profile.username || 'Unknown',
-          userPoints: profile.points || 0,
+          username: profile?.username || 'Unknown',
+          userPoints: profile?.points || 0,
           verified: data.verified || false,
           verificationCount: data.verification_count || 0,
           hasUserVerified: false,
