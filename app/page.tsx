@@ -22,11 +22,34 @@ interface WikiStats {
   concepts: number;
 }
 
+interface Character {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  view_count: number;
+  verified: boolean;
+}
+
+interface WikiItem {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  view_count: number;
+  verified: boolean;
+  type: 'program' | 'advertisement' | 'concept';
+}
+
 export default function Home() {
   const router = useRouter();
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [wikiItems, setWikiItems] = useState<WikiItem[]>([]);
   const [wikiStats, setWikiStats] = useState<WikiStats>({ characters: 0, programs: 0, advertisements: 0, concepts: 0 });
   const [loading, setLoading] = useState(true);
+  const [charactersLoading, setCharactersLoading] = useState(true);
+  const [wikiItemsLoading, setWikiItemsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -300,7 +323,7 @@ export default function Home() {
         } catch (err) {
           console.warn('Wiki stats not available yet');
         }
-    } catch (err) {
+      } catch (err) {
         console.error('Unexpected error fetching data:', err);
         // Set fallback chapters on error
         setChapters([
@@ -325,6 +348,84 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Fetch characters
+  useEffect(() => {
+    const fetchCharacters = async () => {
+      try {
+        setCharactersLoading(true);
+        const { data, error } = await supabase
+          .from('characters')
+          .select('id, title, description, image_url, view_count, verified')
+          .order('title', { ascending: true })
+          .limit(12); // Limit to 12 characters for home page
+
+        if (error) {
+          console.error('Error fetching characters:', error);
+          setCharacters([]);
+        } else {
+          setCharacters(data || []);
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        setCharacters([]);
+      } finally {
+        setCharactersLoading(false);
+      }
+    };
+
+    fetchCharacters();
+  }, []);
+
+  // Fetch and mix all wiki items
+  useEffect(() => {
+    const fetchWikiItems = async () => {
+      try {
+        setWikiItemsLoading(true);
+        
+        // Fetch all items from the three tables
+        const [programsRes, adsRes, conceptsRes] = await Promise.all([
+          supabase.from('programs').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }),
+          supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }),
+          supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }),
+        ]);
+
+        const allItems: WikiItem[] = [];
+
+        // Add programs
+        if (programsRes.data) {
+          programsRes.data.forEach(item => {
+            allItems.push({ ...item, type: 'program' as const });
+          });
+        }
+
+        // Add advertisements
+        if (adsRes.data) {
+          adsRes.data.forEach(item => {
+            allItems.push({ ...item, type: 'advertisement' as const });
+          });
+        }
+
+        // Add concepts
+        if (conceptsRes.data) {
+          conceptsRes.data.forEach(item => {
+            allItems.push({ ...item, type: 'concept' as const });
+          });
+        }
+
+        // Shuffle the array
+        const shuffled = allItems.sort(() => Math.random() - 0.5);
+        setWikiItems(shuffled);
+      } catch (err) {
+        console.error('Error fetching wiki items:', err);
+        setWikiItems([]);
+      } finally {
+        setWikiItemsLoading(false);
+      }
+    };
+
+    fetchWikiItems();
+  }, []);
+
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -346,56 +447,22 @@ export default function Home() {
   } : { x: 0, y: 0 };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative">
-      {/* Animated Background Stars */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(100)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 3 + 1}px`,
-              height: `${Math.random() * 3 + 1}px`,
-              opacity: Math.random() * 0.5 + 0.2,
-              animation: `twinkle ${Math.random() * 3 + 2}s infinite`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Gradient Orbs */}
-      <div 
-        className="fixed w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"
-        style={{
-          left: `${50 + parallaxOffset.x}%`,
-          top: `${20 + parallaxOffset.y}%`,
-          transform: 'translate(-50%, -50%)',
-        }}
-      />
-      <div 
-        className="fixed w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"
-        style={{
-          left: `${30 + parallaxOffset.x * 0.5}%`,
-          top: `${70 + parallaxOffset.y * 0.5}%`,
-          transform: 'translate(-50%, -50%)',
-        }}
-      />
-
+    <div className="min-h-screen bg-black text-white overflow-hidden relative" style={{ fontFamily: 'var(--font-heebo)' }}>
       <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
         {/* Hero Section */}
         <div className="text-center mb-16 mt-12">
           <h1 
-            className="text-7xl md:text-9xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse"
+            className="text-7xl md:text-9xl font-bold mb-6 glitch-text"
             style={{
-              textShadow: '0 0 40px rgba(59, 130, 246, 0.5)',
+              color: '#FFFFFF',
+              fontFamily: 'var(--font-heebo)',
+              textShadow: '0 0 20px rgba(255, 107, 0, 0.5)',
             }}
           >
             יקומות
           </h1>
-          <p className="text-xl md:text-2xl text-zinc-400 mb-8">
-            כניסה ליקום חדש של ידע ותוכן
+          <p className="text-xl md:text-2xl mb-8" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+            יקומה - היקום של יקומות
           </p>
         </div>
 
@@ -406,23 +473,25 @@ export default function Home() {
               user ? (
                 <div className="flex items-center gap-3">
                   {userProfile && (
-                    <span className="text-sm text-zinc-400 bg-zinc-900/50 px-3 py-1 rounded-full border border-zinc-800">
+                    <span className="text-sm px-3 py-1 wireframe-border" style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}>
                       {userProfile.points || 0} נקודות
                     </span>
                   )}
                   <div className="relative group">
                     <button
-                      className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold hover:scale-110 transition-transform"
+                      className="w-10 h-10 wireframe-border flex items-center justify-center font-semibold hover:scale-110 transition-transform"
+                      style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF', background: 'transparent' }}
                     >
                       {user.email?.charAt(0).toUpperCase() || 'U'}
                     </button>
-                    <div className="absolute left-0 top-12 bg-zinc-900/95 backdrop-blur-sm rounded-lg shadow-xl border border-zinc-700 p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                      <div className="px-3 py-2 text-sm text-zinc-300 border-b border-zinc-700">
+                    <div className="absolute left-0 top-12 bg-black wireframe-border p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                      <div className="px-3 py-2 text-sm border-b" style={{ color: '#FFFFFF', borderColor: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
                         {user.email}
                       </div>
                       <button
                         onClick={handleLogout}
-                        className="w-full text-right px-3 py-2 text-sm text-red-400 hover:bg-zinc-800 rounded mt-1"
+                        className="w-full text-right px-3 py-2 text-sm rounded mt-1 hover:bg-white/10"
+                        style={{ color: '#D62828', fontFamily: 'var(--font-mono)' }}
                       >
                         התנתק
                       </button>
@@ -432,11 +501,8 @@ export default function Home() {
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                  className="control-panel-btn"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
                   התחבר
                 </Link>
               )
@@ -444,11 +510,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Chapters Section */}
+        {/* Chapters Section - Control Panel Style */}
         <section className="mb-20">
           <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-4xl font-bold text-white">פרקים</h2>
-            <div className="flex-1 h-px bg-gradient-to-r from-blue-500/50 to-transparent" />
+            <h2 className="text-4xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>פרקים</h2>
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, #FFFFFF, transparent)' }} />
             </div>
           {loading ? (
             <div className="text-center py-12 text-zinc-400">
@@ -460,37 +526,37 @@ export default function Home() {
                 <Link
                   key={chapter.id}
                   href={`/chapter/${chapter.id}`}
-                  className="group relative bg-zinc-900/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-zinc-800 hover:border-blue-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-105"
+                  className="group relative wireframe-border overflow-hidden glitch-hover"
                   style={{
                     animationDelay: `${index * 100}ms`,
+                    background: 'transparent',
                   }}
+                  data-title={chapter.title}
                 >
-                  <div className="relative aspect-video bg-gradient-to-br from-zinc-900 to-black overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+                  <div className="relative aspect-video bg-black overflow-hidden">
                     <div className="absolute inset-0 flex items-center justify-center z-0">
-                      <div className="w-24 h-24 rounded-full bg-blue-500/20 blur-2xl group-hover:bg-blue-500/40 transition-all" />
-                      <svg className="w-16 h-16 text-zinc-600 group-hover:text-blue-500 transition-all z-20 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg className="w-16 h-16" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                   </div>
-                    <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-lg text-xs text-white z-20 border border-white/10">
+                    <div className="absolute bottom-2 left-2 px-3 py-1 text-xs wireframe-border" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)', background: '#000000' }}>
                       פרק {chapter.order_index + 1}
               </div>
                   </div>
                   <div className="p-6 relative z-10">
-                    <h3 className="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors">
+                    <h3 className="text-xl font-bold mb-2 transition-colors" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
                       {chapter.title}
                     </h3>
                     {chapter.description && (
-                      <p className="text-zinc-400 text-sm line-clamp-2 mb-4">
+                      <p className="text-sm line-clamp-2 mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.7 }}>
                         {chapter.description}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-zinc-500 group-hover:text-blue-400 transition-colors">
+                    <div className="flex items-center gap-2 text-sm transition-colors" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
                       <span>לצפייה בפרק</span>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
                   </div>
                 </div>
@@ -500,98 +566,201 @@ export default function Home() {
             )}
         </section>
 
-        {/* Wiki Sections */}
+        {/* Characters Section */}
         <section className="mb-20">
           <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-4xl font-bold text-white">היקום</h2>
-            <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
-                </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Characters */}
+            <h2 className="text-4xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>דמויות</h2>
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, #FFFFFF, transparent)' }} />
             <Link
               href="/characters"
-              className="group relative bg-gradient-to-br from-blue-900/30 to-blue-950/30 backdrop-blur-sm rounded-2xl p-8 border border-blue-500/30 hover:border-blue-500 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/20 hover:scale-105"
+              className="text-sm transition-colors wireframe-border px-3 py-1"
+              style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500/30 transition-colors">
-                  <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+              הצג הכל →
+            </Link>
+          </div>
+          {charactersLoading ? (
+            <div className="text-center py-12 text-zinc-400">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : characters.length === 0 ? (
+            <div className="text-center py-12 text-zinc-400">
+              <p>אין דמויות עדיין</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+              {characters.map((character) => (
+                <Link
+                  key={character.id}
+                  href={`/characters/${character.id}`}
+                  className="group character-sandwich wireframe-border overflow-hidden glitch-hover"
+                  style={{ background: 'transparent' }}
+                  data-title={character.title}
+                >
+                  <div className="relative aspect-square bg-black character-layer">
+                    {character.image_url ? (
+                      <Image
+                        src={character.image_url}
+                        alt={character.title}
+                        fill
+                        className="object-cover"
+                        style={{ mixBlendMode: 'normal' }}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <svg className="w-16 h-16" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
                       </div>
-                <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors">דמויות</h3>
-                <p className="text-zinc-400 text-sm mb-4">גלה את כל הדמויות ביקום</p>
-                <div className="text-3xl font-bold text-blue-400">{wikiStats.characters}</div>
-                <div className="text-sm text-zinc-500 mt-1">ערכים</div>
+                    )}
+                    {character.verified && (
+                      <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
+                        <span>⭐</span>
+                        <span>מאומת</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 text-layer">
+                    <h3 className="text-lg font-bold mb-1 transition-colors" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
+                      {character.title}
+                    </h3>
+                    {character.description && (
+                      <p className="text-sm line-clamp-2 mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.7 }}>
+                        {character.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
+                      <span>{character.view_count || 0} צפיות</span>
                     </div>
-            </Link>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
 
-            {/* Programs */}
-            <Link
-              href="/programs"
-              className="group relative bg-gradient-to-br from-purple-900/30 to-purple-950/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30 hover:border-purple-500 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 hover:scale-105"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-purple-500/30 transition-colors">
-                  <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                          </div>
-                <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-purple-400 transition-colors">תכניות</h3>
-                <p className="text-zinc-400 text-sm mb-4">כל התכניות ביקום</p>
-                <div className="text-3xl font-bold text-purple-400">{wikiStats.programs}</div>
-                <div className="text-sm text-zinc-500 mt-1">ערכים</div>
+        {/* Wiki Items Section - Nonsense Grid with Masonry */}
+        <section className="mb-20">
+          <div className="flex items-center gap-4 mb-8">
+            <h2 className="text-4xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>היקום</h2>
+            <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, #FFFFFF, transparent)' }} />
+          </div>
+          {wikiItemsLoading ? (
+            <div className="text-center py-12 text-zinc-400">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+            </div>
+          ) : wikiItems.length === 0 ? (
+            <div className="text-center py-12 text-zinc-400">
+              <p>אין פריטים עדיין</p>
+            </div>
+          ) : (
+            <div className="masonry-grid">
+              {wikiItems.map((item) => {
+                const getTypeColors = () => {
+                  switch (item.type) {
+                    case 'program':
+                      return {
+                        accentColor: '#008C9E',
+                      };
+                    case 'advertisement':
+                      return {
+                        accentColor: '#FF6B00',
+                      };
+                    case 'concept':
+                      return {
+                        accentColor: '#D62828',
+                      };
+                  }
+                };
+
+                const getTypeLabel = () => {
+                  switch (item.type) {
+                    case 'program':
+                      return 'תכנית';
+                    case 'advertisement':
+                      return 'פרסומת';
+                    case 'concept':
+                      return 'מושג';
+                  }
+                };
+
+                const getHref = () => {
+                  switch (item.type) {
+                    case 'program':
+                      return `/programs/${item.id}`;
+                    case 'advertisement':
+                      return `/advertisements/${item.id}`;
+                    case 'concept':
+                      return `/concepts/${item.id}`;
+                  }
+                };
+
+                const colors = getTypeColors();
+                const href = getHref();
+                const randomHeight = Math.floor(Math.random() * 200) + 300; // Varying heights for masonry
+
+                return (
+                  <Link
+                    key={`${item.type}-${item.id}`}
+                    href={href}
+                    className="masonry-item wireframe-border overflow-hidden glitch-hover rgb-split"
+                    style={{ background: 'transparent', minHeight: `${randomHeight}px` }}
+                    data-title={item.title}
+                  >
+                    <div className="relative bg-black" style={{ height: '200px' }}>
+                      {item.image_url ? (
+                        <Image
+                          src={item.image_url}
+                          alt={item.title}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg className="w-16 h-16" style={{ color: colors.accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {item.type === 'program' && (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            )}
+                            {item.type === 'advertisement' && (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.533 9.5-3.5C19.532 4.5 22 8.5 22 13c0 1.76-.743 4.5-5.5 4.5s-7.5-2.5-7.5-2.5z" />
+                            )}
+                            {item.type === 'concept' && (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            )}
+                          </svg>
                         </div>
-            </Link>
-
-            {/* Advertisements */}
-            <Link
-              href="/advertisements"
-              className="group relative bg-gradient-to-br from-pink-900/30 to-pink-950/30 backdrop-blur-sm rounded-2xl p-8 border border-pink-500/30 hover:border-pink-500 transition-all duration-300 hover:shadow-2xl hover:shadow-pink-500/20 hover:scale-105"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-pink-500/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-pink-500/30 transition-colors">
-                  <svg className="w-8 h-8 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.533 9.5-3.5C19.532 4.5 22 8.5 22 13c0 1.76-.743 4.5-5.5 4.5s-7.5-2.5-7.5-2.5z" />
-                  </svg>
+                      )}
+                      <div className="absolute top-2 right-2 px-2 py-1 text-xs wireframe-border" style={{ color: colors.accentColor, fontFamily: 'var(--font-mono)', background: '#000000' }}>
+                        {getTypeLabel()}
                       </div>
-                <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-pink-400 transition-colors">פרסומות</h3>
-                <p className="text-zinc-400 text-sm mb-4">פרסומות מהיקום</p>
-                <div className="text-3xl font-bold text-pink-400">{wikiStats.advertisements}</div>
-                <div className="text-sm text-zinc-500 mt-1">ערכים</div>
+                      {item.verified && (
+                        <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
+                          <span>⭐</span>
+                          <span>מאומת</span>
                         </div>
-            </Link>
-
-            {/* Concepts */}
-            <Link
-              href="/concepts"
-              className="group relative bg-gradient-to-br from-cyan-900/30 to-cyan-950/30 backdrop-blur-sm rounded-2xl p-8 border border-cyan-500/30 hover:border-cyan-500 transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/20 hover:scale-105"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-cyan-500/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-cyan-500/30 transition-colors">
-                  <svg className="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-              </div>
-                <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-cyan-400 transition-colors">מושגים</h3>
-                <p className="text-zinc-400 text-sm mb-4">מושגים מרכזיים</p>
-                <div className="text-3xl font-bold text-cyan-400">{wikiStats.concepts}</div>
-                <div className="text-sm text-zinc-500 mt-1">ערכים</div>
-                </div>
-            </Link>
-                </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-bold mb-1 transition-colors glitch-text" style={{ color: colors.accentColor, fontFamily: 'var(--font-heebo)' }}>
+                        {item.title}
+                      </h3>
+                      {item.description && (
+                        <p className="text-sm line-clamp-3 mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.7 }}>
+                          {item.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 text-xs" style={{ color: colors.accentColor, fontFamily: 'var(--font-mono)' }}>
+                        <span>{item.view_count || 0} צפיות</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </section>
             </div>
 
-      <style jsx>{`
-        @keyframes twinkle {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }

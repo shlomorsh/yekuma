@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Heebo, Assistant } from "next/font/google";
 import "./globals.css";
+import GunCursor from "./components/GunCursor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,9 +13,21 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const heebo = Heebo({
+  variable: "--font-heebo",
+  subsets: ["hebrew", "latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+});
+
+const assistant = Assistant({
+  variable: "--font-assistant",
+  subsets: ["hebrew", "latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+});
+
 export const metadata: Metadata = {
-  title: "יקומות - מערכת רפרנסים",
-  description: "מערכת רפרנסים לפרקי יקומות",
+  title: "יקומה - היקום של יקומות",
+  description: "יקומה - היקום של יקומות - מערכת רפרנסים לפרקי יקומות",
 };
 
 export default function RootLayout({
@@ -25,8 +38,9 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${heebo.variable} ${assistant.variable} antialiased`}
       >
+        <GunCursor />
         {children}
       </body>
     </html>

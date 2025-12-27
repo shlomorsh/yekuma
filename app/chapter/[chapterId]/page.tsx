@@ -67,6 +67,14 @@ export default function ChapterPage() {
   const [showLinkedRefsModal, setShowLinkedRefsModal] = useState(false);
   const [availableReferences, setAvailableReferences] = useState<Reference[]>([]);
   const [loadingLinkedRefs, setLoadingLinkedRefs] = useState(false);
+  const [targetingMode, setTargetingMode] = useState(false);
+  const [crosshairPosition, setCrosshairPosition] = useState({ x: 0, y: 0 });
+  const [isEditingReference, setIsEditingReference] = useState(false);
+  const [editReferenceData, setEditReferenceData] = useState({
+    title: "",
+    description: "",
+    imageUrl: ""
+  });
 
   // Check authentication status
   useEffect(() => {
@@ -424,20 +432,35 @@ export default function ChapterPage() {
       return;
     }
 
-    if (playerRef.current && isReady) {
-      const currentTime = typeof playerRef.current.currentTime === "number" 
-        ? Math.floor(playerRef.current.currentTime)
-        : 0;
-      
-      setPlaying(false);
-      setFormData({
-        timestamp: currentTime,
-        title: "",
-        description: "",
-        imageUrl: "https://via.placeholder.com/400x300/1f2937/9ca3af?text=רפרנס+חדש"
-      });
-      setShowAddForm(true);
-    }
+    // Enable targeting mode
+    setTargetingMode(true);
+    setPlaying(false);
+  };
+
+  const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!targetingMode || !playerRef.current || !isReady) return;
+
+    const currentTime = typeof playerRef.current.currentTime === "number" 
+      ? Math.floor(playerRef.current.currentTime)
+      : 0;
+
+    setFormData({
+      timestamp: currentTime,
+      title: "",
+      description: "",
+      imageUrl: "https://via.placeholder.com/400x300/1f2937/9ca3af?text=רפרנס+חדש"
+    });
+    setTargetingMode(false);
+    setShowAddForm(true);
+  };
+
+  const handleVideoMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!targetingMode) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCrosshairPosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
   };
 
   const handleSaveReference = async (e: React.FormEvent) => {
@@ -582,6 +605,92 @@ export default function ChapterPage() {
       window.location.reload();
     } catch (err) {
       console.error('Error verifying:', err);
+    }
+  };
+
+  const handleEditReference = () => {
+    if (!selectedReference) return;
+    setEditReferenceData({
+      title: selectedReference.title,
+      description: selectedReference.description,
+      imageUrl: selectedReference.imageUrl
+    });
+    setIsEditingReference(true);
+  };
+
+  const handleSaveEditReference = async () => {
+    if (!selectedReference || !user) return;
+    
+    if (!editReferenceData.title.trim()) {
+      alert("אנא הכנס כותרת");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('references')
+        .update({
+          title: editReferenceData.title,
+          description: editReferenceData.description,
+          image_url: editReferenceData.imageUrl
+        })
+        .eq('id', selectedReference.id);
+        // כל משתמש מחובר יכול לערוך
+
+      if (error) {
+        alert('שגיאה בעריכה: ' + error.message);
+        return;
+      }
+
+      // Update local state
+      const updatedReference = {
+        ...selectedReference,
+        title: editReferenceData.title,
+        description: editReferenceData.description,
+        imageUrl: editReferenceData.imageUrl
+      };
+      setSelectedReference(updatedReference);
+      setReferences(references.map(ref => 
+        ref.id === selectedReference.id ? updatedReference : ref
+      ));
+      setIsEditingReference(false);
+      alert('הרפרנס עודכן בהצלחה!');
+    } catch (err) {
+      console.error('Error editing reference:', err);
+      alert('שגיאה בלתי צפויה');
+    }
+  };
+
+  const handleDeleteReference = async () => {
+    if (!selectedReference || !user) return;
+    
+    if (!confirm("האם אתה בטוח שברצונך למחוק את הרפרנס הזה?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('references')
+        .delete()
+        .eq('id', selectedReference.id)
+        .eq('user_id', user.id); // רק היוצר יכול למחוק
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          alert("אתה לא יכול למחוק רפרנס שלא יצרת");
+        } else {
+          alert('שגיאה במחיקה: ' + error.message);
+        }
+        return;
+      }
+
+      // Remove from local state
+      setReferences(references.filter(ref => ref.id !== selectedReference.id));
+      setSelectedReference(null);
+      alert('הרפרנס נמחק בהצלחה!');
+    } catch (err) {
+      console.error('Error deleting reference:', err);
+      alert('שגיאה בלתי צפויה');
     }
   };
 
@@ -758,18 +867,19 @@ export default function ChapterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-black to-zinc-900 text-white">
+    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               href="/"
-              className="text-blue-400 hover:text-blue-300 transition-colors"
+              className="wireframe-border px-3 py-1 transition-colors"
+              style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}
             >
               ← חזרה לדף הבית
             </Link>
-            <h1 className="text-2xl font-bold text-white">{chapter.title}</h1>
+            <h1 className="text-2xl font-bold glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>{chapter.title}</h1>
           </div>
           <div className="flex items-center gap-4">
             {!authLoading && (
@@ -821,18 +931,20 @@ export default function ChapterPage() {
             <div className="flex justify-end">
               <button
                 onClick={handleAddReferenceClick}
-                disabled={!isReady}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-colors duration-200 flex items-center gap-2"
+                disabled={!isReady || targetingMode}
+                className={`control-panel-btn ${targetingMode ? 'opacity-50' : ''}`}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                הוסף רפרנס
+                {targetingMode ? 'מצב כיוון פעיל...' : 'הוסף רפרנס'}
               </button>
             </div>
 
             {/* Video Player */}
-            <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl overflow-hidden shadow-2xl border border-zinc-800 relative">
+            <div 
+              className="bg-black wireframe-border overflow-hidden relative"
+              style={{ cursor: targetingMode ? 'crosshair' : 'default' }}
+              onClick={handleVideoClick}
+              onMouseMove={handleVideoMouseMove}
+            >
               <ReactPlayer
                 ref={playerRef}
                 url={chapter.video_url}
@@ -842,15 +954,63 @@ export default function ChapterPage() {
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
                 onReady={() => setIsReady(true)}
-                controls
+                controls={!targetingMode}
                 className="aspect-video"
               />
+              
+              {/* Targeting Mode Overlay */}
+              {targetingMode && (
+                <>
+                  <div 
+                    className="crosshair"
+                    style={{
+                      left: `${crosshairPosition.x}px`,
+                      top: `${crosshairPosition.y}px`,
+                    }}
+                  />
+                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 wireframe-border px-4 py-2 bg-black" style={{ fontFamily: 'var(--font-mono)', color: '#FF6B00' }}>
+                    מצב כיוון - לחץ על הווידאו להוספת רפרנס
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTargetingMode(false);
+                    }}
+                    className="absolute top-4 right-4 wireframe-border px-3 py-1 bg-black hover:bg-white/10 transition-colors"
+                    style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}
+                  >
+                    ביטול
+                  </button>
+                </>
+              )}
+
+              {/* Reference Pins - Blinking Red Dots */}
+              {references.map((ref) => {
+                // Calculate pin position based on timestamp and video duration
+                // For now, we'll position them along the timeline
+                return (
+                  <div
+                    key={ref.id}
+                    className="blink-red absolute bottom-4"
+                    style={{
+                      left: `${(ref.timestamp / 600) * 100}%`, // Approximate position
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      transform: 'translateX(-50%)',
+                      zIndex: 10,
+                      pointerEvents: 'none',
+                    }}
+                    title={ref.title}
+                  />
+                );
+              })}
             </div>
 
             {/* Add Reference Form */}
             {showAddForm && user && (
-              <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl p-6 shadow-2xl border border-zinc-800">
-                <h2 className="text-2xl font-bold mb-4 text-white">הוסף רפרנס חדש</h2>
+              <div className="terminal-style">
+                <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>הוסף רפרנס חדש</h2>
                 <form onSubmit={handleSaveReference} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-2">
@@ -918,6 +1078,7 @@ export default function ChapterPage() {
                           imageUrl: "https://via.placeholder.com/400x300/1f2937/9ca3af?text=רפרנס+חדש"
                         });
                         setShowAddForm(false);
+                        setTargetingMode(false);
                       }}
                       className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
                     >
@@ -969,6 +1130,26 @@ export default function ChapterPage() {
                         <span>🔗</span>
                         <span>קשר רפרנס</span>
                       </button>
+                    )}
+                    {user && (
+                      <>
+                        <button
+                          onClick={handleEditReference}
+                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                        >
+                          <span>✏️</span>
+                          <span>ערוך</span>
+                        </button>
+                        {selectedReference.userId === user.id && (
+                          <button
+                            onClick={handleDeleteReference}
+                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                          >
+                            <span>🗑️</span>
+                            <span>מחק</span>
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1031,6 +1212,70 @@ export default function ChapterPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Edit Reference Form */}
+            {isEditingReference && selectedReference && (
+              <div className="terminal-style">
+                <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>ערוך רפרנס</h2>
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveEditReference(); }} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                      כותרת <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editReferenceData.title}
+                      onChange={(e) => setEditReferenceData({ ...editReferenceData, title: e.target.value })}
+                      required
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="הכנס כותרת רפרנס"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                      תיאור
+                    </label>
+                    <textarea
+                      value={editReferenceData.description}
+                      onChange={(e) => setEditReferenceData({ ...editReferenceData, description: e.target.value })}
+                      rows={4}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      placeholder="הכנס תיאור רפרנס"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-2">
+                      כתובת תמונה
+                    </label>
+                    <input
+                      type="url"
+                      value={editReferenceData.imageUrl}
+                      onChange={(e) => setEditReferenceData({ ...editReferenceData, imageUrl: e.target.value })}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+                    >
+                      שמור שינויים
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingReference(false);
+                        setEditReferenceData({ title: "", description: "", imageUrl: "" });
+                      }}
+                      className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+                    >
+                      ביטול
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
           </div>

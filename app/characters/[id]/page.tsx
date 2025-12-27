@@ -241,6 +241,43 @@ export default function CharacterPage() {
     }
   };
 
+  const handleDeleteCharacter = async () => {
+    if (!user || !character) return;
+    
+    // Check if user is the creator
+    if (character.created_by !== user.id) {
+      alert("אתה יכול למחוק רק דמויות שיצרת");
+      return;
+    }
+
+    if (!confirm("האם אתה בטוח שברצונך למחוק את הדמות הזו? פעולה זו לא ניתנת לביטול.")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('characters')
+        .delete()
+        .eq('id', characterId)
+        .eq('created_by', user.id); // רק היוצר יכול למחוק
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          alert("אתה לא יכול למחוק דמות שלא יצרת");
+        } else {
+          alert('שגיאה במחיקה: ' + error.message);
+        }
+        return;
+      }
+
+      alert('הדמות נמחקה בהצלחה!');
+      router.push('/characters');
+    } catch (err) {
+      console.error('Error deleting character:', err);
+      alert('שגיאה בלתי צפויה');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -322,6 +359,14 @@ export default function CharacterPage() {
                 >
                   {isEditing ? 'בטל עריכה' : 'ערוך'}
                 </button>
+                {character.created_by === user.id && (
+                  <button
+                    onClick={handleDeleteCharacter}
+                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    🗑️ מחק
+                  </button>
+                )}
               </div>
             )}
           </div>
