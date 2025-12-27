@@ -49,6 +49,11 @@ export default function Home() {
         
         // Handle magic link callback from URL hash or query params
         // Check both hash (direct) and query params (Google redirect)
+        if (typeof window === 'undefined') {
+          setAuthLoading(false);
+          return;
+        }
+        
         const hash = window.location.hash.substring(1);
         const search = window.location.search.substring(1);
         
@@ -153,7 +158,7 @@ export default function Home() {
       console.log('Auth state changed:', event, session?.user?.email);
       
       // Clear URL hash if present
-      if (window.location.hash) {
+      if (typeof window !== 'undefined' && window.location.hash) {
         window.history.replaceState(null, '', window.location.pathname);
       }
       
