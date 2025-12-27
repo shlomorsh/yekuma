@@ -213,47 +213,20 @@ export default function Home() {
         setLoading(true);
         console.log('Fetching chapters...');
         
-        // Fetch chapters with timeout to prevent hanging
+        // Fetch chapters - try simple query first
         console.log('Attempting to fetch chapters from Supabase...');
+        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...');
         
-        let chaptersData, chaptersError;
-        const timeoutMs = 8000; // 8 seconds
+        // Try a simple count query first to test connection
+        const { count: testCount, error: testError } = await supabase
+          .from('chapters')
+          .select('*', { count: 'exact', head: true });
         
-        try {
-          const queryPromise = supabase
-            .from('chapters')
-            .select('*')
-            .order('order_index', { ascending: true });
-          
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Query timeout after 8 seconds')), timeoutMs)
-          );
-          
-          const result = await Promise.race([queryPromise, timeoutPromise]) as any;
-          
-          chaptersData = result?.data;
-          chaptersError = result?.error;
-          
-          console.log('Chapters query completed:', {
-            hasData: !!chaptersData,
-            dataLength: chaptersData?.length,
-            hasError: !!chaptersError,
-            errorCode: chaptersError?.code,
-            errorMessage: chaptersError?.message,
-            errorDetails: chaptersError?.details,
-            errorHint: chaptersError?.hint
-          });
-        } catch (err: any) {
-          console.error('Chapters fetch timeout or error:', err);
-          chaptersError = { 
-            message: err.message || 'Query timeout',
-            code: 'TIMEOUT',
-            details: err
-          };
-          chaptersData = null;
-          
-          // Use fallback on timeout
-          console.log('Using fallback chapters due to timeout/error');
+        console.log('Test query result:', { count: testCount, error: testError });
+        
+        if (testError) {
+          console.error('Test query failed:', testError);
+          // Use fallback
           setChapters([
             { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
             { id: '2', title: 'פרק 2', description: 'פרק שני של יקומות', video_url: 'https://www.youtube.com/watch?v=iSHIKkYQ-aI&t=327s', order_index: 1, created_at: new Date().toISOString() },
@@ -263,8 +236,24 @@ export default function Home() {
             { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
           ]);
           setLoading(false);
-          return; // Exit early on timeout
+          return;
         }
+        
+        // If test query works, try full query
+        const { data: chaptersData, error: chaptersError } = await supabase
+          .from('chapters')
+          .select('*')
+          .order('order_index', { ascending: true });
+        
+        console.log('Chapters query completed:', {
+          hasData: !!chaptersData,
+          dataLength: chaptersData?.length,
+          hasError: !!chaptersError,
+          errorCode: chaptersError?.code,
+          errorMessage: chaptersError?.message,
+          errorDetails: chaptersError?.details,
+          errorHint: chaptersError?.hint
+        });
 
         if (chaptersError) {
           console.error('Error fetching chapters:', chaptersError);
