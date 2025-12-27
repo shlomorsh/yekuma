@@ -55,13 +55,24 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(true);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-  // Track mouse for parallax effects
+  // Track mouse for parallax effects - throttled for performance
   useEffect(() => {
+    let rafId: number | null = null;
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          setMousePosition({ x: e.clientX, y: e.clientY });
+          rafId = null;
+        });
+      }
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
   // Check authentication status and handle magic link
@@ -234,49 +245,11 @@ export default function Home() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log('Fetching chapters...');
-        
-        // Fetch chapters - try simple query first
-        console.log('Attempting to fetch chapters from Supabase...');
-        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...');
-        
-        // Try a simple count query first to test connection
-        const { count: testCount, error: testError } = await supabase
-          .from('chapters')
-          .select('*', { count: 'exact', head: true });
-        
-        console.log('Test query result:', { count: testCount, error: testError });
-        
-        if (testError) {
-          console.error('Test query failed:', testError);
-          // Use fallback
-          setChapters([
-            { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
-            { id: '2', title: 'פרק 2', description: 'פרק שני של יקומות', video_url: 'https://www.youtube.com/watch?v=iSHIKkYQ-aI&t=327s', order_index: 1, created_at: new Date().toISOString() },
-            { id: '3', title: 'פרק 3', description: 'פרק שלישי של יקומות', video_url: 'https://www.youtube.com/watch?v=Ff8FRXPDk_w', order_index: 2, created_at: new Date().toISOString() },
-            { id: '4', title: 'פרק 4', description: 'פרק רביעי של יקומות', video_url: 'https://www.youtube.com/watch?v=N_PsQc4JMpg', order_index: 3, created_at: new Date().toISOString() },
-            { id: '5', title: 'פרק 5', description: 'פרק חמישי של יקומות', video_url: 'https://www.youtube.com/watch?v=oYljFReoQbc', order_index: 4, created_at: new Date().toISOString() },
-            { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
-          ]);
-          setLoading(false);
-          return;
-        }
-        
-        // If test query works, try full query
+        // Fetch chapters directly
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
           .select('*')
           .order('order_index', { ascending: true });
-        
-        console.log('Chapters query completed:', {
-          hasData: !!chaptersData,
-          dataLength: chaptersData?.length,
-          hasError: !!chaptersError,
-          errorCode: chaptersError?.code,
-          errorMessage: chaptersError?.message,
-          errorDetails: chaptersError?.details,
-          errorHint: chaptersError?.hint
-        });
 
         if (chaptersError) {
           console.error('Error fetching chapters:', chaptersError);
@@ -290,10 +263,8 @@ export default function Home() {
             { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
           ]);
         } else if (chaptersData && chaptersData.length > 0) {
-          console.log('Setting chapters:', chaptersData.length);
           setChapters(chaptersData);
         } else {
-          console.log('No chapters found, using fallback');
           // Fallback - use string IDs that match the fallback in chapter page
           setChapters([
             { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
@@ -324,7 +295,6 @@ export default function Home() {
           console.warn('Wiki stats not available yet');
         }
       } catch (err) {
-        console.error('Unexpected error fetching data:', err);
         // Set fallback chapters on error
         setChapters([
           { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
@@ -335,17 +305,12 @@ export default function Home() {
           { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
         ]);
     } finally {
-        console.log('Finished fetching, setting loading to false');
         setLoading(false);
       }
     };
 
-    // Small delay to ensure auth useEffect doesn't block
-    const timer = setTimeout(() => {
-      fetchData();
-    }, 100);
-
-    return () => clearTimeout(timer);
+    // Fetch immediately - no delay needed
+    fetchData();
   }, []);
 
   // Fetch characters
@@ -382,11 +347,11 @@ export default function Home() {
       try {
         setWikiItemsLoading(true);
         
-        // Fetch all items from the three tables
+        // Fetch all items from the three tables - limit for performance
         const [programsRes, adsRes, conceptsRes] = await Promise.all([
-          supabase.from('programs').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }),
-          supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }),
-          supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }),
+          supabase.from('programs').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
+          supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
+          supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
         ]);
 
         const allItems: WikiItem[] = [];
@@ -610,6 +575,8 @@ export default function Home() {
                         fill
                         className="object-cover"
                         style={{ mixBlendMode: 'normal' }}
+                        loading="lazy"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -719,6 +686,8 @@ export default function Home() {
                           alt={item.title}
                           fill
                           className="object-cover"
+                          loading="lazy"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">

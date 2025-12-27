@@ -17,17 +17,26 @@ export default function GunCursor() {
     checkDevice();
     window.addEventListener('resize', checkDevice);
 
-    // Desktop: Track mouse
+    // Desktop: Track mouse - throttled with requestAnimationFrame
     if (isDesktop) {
+      let rafId: number | null = null;
       const handleMouseMove = (e: MouseEvent) => {
-        setMousePosition({ x: e.clientX, y: e.clientY });
+        if (rafId === null) {
+          rafId = requestAnimationFrame(() => {
+            setMousePosition({ x: e.clientX, y: e.clientY });
+            rafId = null;
+          });
+        }
       };
       
-      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
       
       return () => {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('resize', checkDevice);
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+        }
       };
     } else {
       // Mobile: Handle touch - track continuously during drag
@@ -82,18 +91,26 @@ export default function GunCursor() {
     }
   }, [isDesktop]);
 
-  // Also track mouse on mobile devices that support both (like tablets)
+  // Also track mouse on mobile devices that support both (like tablets) - throttled
   useEffect(() => {
     if (!isDesktop) {
+      let rafId: number | null = null;
       const handleMouseMove = (e: MouseEvent) => {
-        // Only update if mouse is actually moving (not just hovering)
-        setMousePosition({ x: e.clientX, y: e.clientY });
+        if (rafId === null) {
+          rafId = requestAnimationFrame(() => {
+            setMousePosition({ x: e.clientX, y: e.clientY });
+            rafId = null;
+          });
+        }
       };
       
-      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
       
       return () => {
         window.removeEventListener('mousemove', handleMouseMove);
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+        }
       };
     }
   }, [isDesktop]);
