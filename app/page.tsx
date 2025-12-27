@@ -294,7 +294,7 @@ export default function Home() {
           setChapters(chaptersData);
         } else {
           console.log('No chapters found, using fallback');
-          // Fallback
+          // Fallback - use string IDs that match the fallback in chapter page
           setChapters([
             { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
             { id: '2', title: 'פרק 2', description: 'פרק שני של יקומות', video_url: 'https://www.youtube.com/watch?v=iSHIKkYQ-aI&t=327s', order_index: 1, created_at: new Date().toISOString() },
@@ -520,12 +520,17 @@ export default function Home() {
             <div className="text-center py-12 text-zinc-400">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>
+          ) : chapters.length === 0 ? (
+            <div className="text-center py-12 text-zinc-400">
+              <p>אין פרקים זמינים</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {chapters.map((chapter, index) => (
                 <Link
                   key={chapter.id}
                   href={`/chapter/${chapter.id}`}
+                  prefetch={true}
                   className="group relative wireframe-border overflow-hidden glitch-hover"
                   style={{
                     animationDelay: `${index * 100}ms`,

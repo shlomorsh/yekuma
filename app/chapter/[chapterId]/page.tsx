@@ -855,11 +855,24 @@ export default function ChapterPage() {
     }
   };
 
+  if (!chapter && !loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
+        <div className="text-center">
+          <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>פרק לא נמצא</p>
+          <Link href="/" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
+            חזרה לדף הבית
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!chapter) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-black to-zinc-900 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
-          <div className="text-xl mb-4">טוען פרק...</div>
+          <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>טוען פרק...</div>
           {loading && <div className="text-zinc-400">אנא המתן</div>}
         </div>
       </div>
@@ -945,18 +958,32 @@ export default function ChapterPage() {
               onClick={handleVideoClick}
               onMouseMove={handleVideoMouseMove}
             >
-              <ReactPlayer
-                ref={playerRef}
-                url={chapter.video_url}
-                width="100%"
-                height="100%"
-                playing={playing}
-                onPlay={() => setPlaying(true)}
-                onPause={() => setPlaying(false)}
-                onReady={() => setIsReady(true)}
-                controls={!targetingMode}
-                className="aspect-video"
-              />
+              {chapter.video_url ? (
+                <ReactPlayer
+                  ref={playerRef}
+                  url={chapter.video_url}
+                  width="100%"
+                  height="100%"
+                  playing={playing}
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  onReady={() => setIsReady(true)}
+                  controls={!targetingMode}
+                  className="aspect-video"
+                  config={{
+                    youtube: {
+                      playerVars: {
+                        modestbranding: 1,
+                        rel: 0,
+                      },
+                    },
+                  }}
+                />
+              ) : (
+                <div className="aspect-video flex items-center justify-center">
+                  <p className="text-zinc-400">אין קישור וידאו זמין</p>
+                </div>
+              )}
               
               {/* Targeting Mode Overlay */}
               {targetingMode && (
