@@ -213,23 +213,58 @@ export default function Home() {
         setLoading(true);
         console.log('Fetching chapters...');
         
-        // Fetch chapters
+        // Fetch chapters with timeout to prevent hanging
         console.log('Attempting to fetch chapters from Supabase...');
         
-        const { data: chaptersData, error: chaptersError } = await supabase
-          .from('chapters')
-          .select('*')
-          .order('order_index', { ascending: true });
+        let chaptersData, chaptersError;
+        const timeoutMs = 8000; // 8 seconds
         
-        console.log('Chapters query completed:', {
-          hasData: !!chaptersData,
-          dataLength: chaptersData?.length,
-          hasError: !!chaptersError,
-          errorCode: chaptersError?.code,
-          errorMessage: chaptersError?.message,
-          errorDetails: chaptersError?.details,
-          errorHint: chaptersError?.hint
-        });
+        try {
+          const queryPromise = supabase
+            .from('chapters')
+            .select('*')
+            .order('order_index', { ascending: true });
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Query timeout after 8 seconds')), timeoutMs)
+          );
+          
+          const result = await Promise.race([queryPromise, timeoutPromise]) as any;
+          
+          chaptersData = result?.data;
+          chaptersError = result?.error;
+          
+          console.log('Chapters query completed:', {
+            hasData: !!chaptersData,
+            dataLength: chaptersData?.length,
+            hasError: !!chaptersError,
+            errorCode: chaptersError?.code,
+            errorMessage: chaptersError?.message,
+            errorDetails: chaptersError?.details,
+            errorHint: chaptersError?.hint
+          });
+        } catch (err: any) {
+          console.error('Chapters fetch timeout or error:', err);
+          chaptersError = { 
+            message: err.message || 'Query timeout',
+            code: 'TIMEOUT',
+            details: err
+          };
+          chaptersData = null;
+          
+          // Use fallback on timeout
+          console.log('Using fallback chapters due to timeout/error');
+          setChapters([
+            { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
+            { id: '2', title: 'פרק 2', description: 'פרק שני של יקומות', video_url: 'https://www.youtube.com/watch?v=iSHIKkYQ-aI&t=327s', order_index: 1, created_at: new Date().toISOString() },
+            { id: '3', title: 'פרק 3', description: 'פרק שלישי של יקומות', video_url: 'https://www.youtube.com/watch?v=Ff8FRXPDk_w', order_index: 2, created_at: new Date().toISOString() },
+            { id: '4', title: 'פרק 4', description: 'פרק רביעי של יקומות', video_url: 'https://www.youtube.com/watch?v=N_PsQc4JMpg', order_index: 3, created_at: new Date().toISOString() },
+            { id: '5', title: 'פרק 5', description: 'פרק חמישי של יקומות', video_url: 'https://www.youtube.com/watch?v=oYljFReoQbc', order_index: 4, created_at: new Date().toISOString() },
+            { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
+          ]);
+          setLoading(false);
+          return; // Exit early on timeout
+        }
 
         if (chaptersError) {
           console.error('Error fetching chapters:', chaptersError);
