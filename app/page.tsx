@@ -196,7 +196,7 @@ export default function Home() {
           .insert([{ id: userId, points: 0, username: username }])
           .select('id, username, points')
           .single();
-        
+
         if (newProfile) {
           setUserProfile(newProfile);
         }
@@ -211,12 +211,15 @@ export default function Home() {
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log('Fetching chapters...');
         
         // Fetch chapters
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
           .select('*')
           .order('order_index', { ascending: true });
+        
+        console.log('Chapters data:', chaptersData, 'Error:', chaptersError);
 
         if (chaptersError) {
           console.error('Error fetching chapters:', chaptersError);
@@ -230,8 +233,10 @@ export default function Home() {
             { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
           ]);
         } else if (chaptersData && chaptersData.length > 0) {
+          console.log('Setting chapters:', chaptersData.length);
           setChapters(chaptersData);
         } else {
+          console.log('No chapters found, using fallback');
           // Fallback
           setChapters([
             { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
@@ -262,13 +267,28 @@ export default function Home() {
           console.warn('Wiki stats not available yet');
         }
       } catch (err) {
-        console.error('Unexpected error:', err);
+        console.error('Unexpected error fetching data:', err);
+        // Set fallback chapters on error
+        setChapters([
+          { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
+          { id: '2', title: 'פרק 2', description: 'פרק שני של יקומות', video_url: 'https://www.youtube.com/watch?v=iSHIKkYQ-aI&t=327s', order_index: 1, created_at: new Date().toISOString() },
+          { id: '3', title: 'פרק 3', description: 'פרק שלישי של יקומות', video_url: 'https://www.youtube.com/watch?v=Ff8FRXPDk_w', order_index: 2, created_at: new Date().toISOString() },
+          { id: '4', title: 'פרק 4', description: 'פרק רביעי של יקומות', video_url: 'https://www.youtube.com/watch?v=N_PsQc4JMpg', order_index: 3, created_at: new Date().toISOString() },
+          { id: '5', title: 'פרק 5', description: 'פרק חמישי של יקומות', video_url: 'https://www.youtube.com/watch?v=oYljFReoQbc', order_index: 4, created_at: new Date().toISOString() },
+          { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
+        ]);
       } finally {
+        console.log('Finished fetching, setting loading to false');
         setLoading(false);
       }
     };
 
-    fetchData();
+    // Small delay to ensure auth useEffect doesn't block
+    const timer = setTimeout(() => {
+      fetchData();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const handleLogout = async () => {
@@ -395,7 +415,7 @@ export default function Home() {
           <div className="flex items-center gap-4 mb-8">
             <h2 className="text-4xl font-bold text-white">פרקים</h2>
             <div className="flex-1 h-px bg-gradient-to-r from-blue-500/50 to-transparent" />
-          </div>
+            </div>
           {loading ? (
             <div className="text-center py-12 text-zinc-400">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -419,10 +439,10 @@ export default function Home() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                    </div>
+                  </div>
                     <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-lg text-xs text-white z-20 border border-white/10">
                       פרק {chapter.order_index + 1}
-                    </div>
+              </div>
                   </div>
                   <div className="p-6 relative z-10">
                     <h3 className="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors">
@@ -438,12 +458,12 @@ export default function Home() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
-                    </div>
                   </div>
+                </div>
                 </Link>
               ))}
-            </div>
-          )}
+              </div>
+            )}
         </section>
 
         {/* Wiki Sections */}
@@ -451,7 +471,7 @@ export default function Home() {
           <div className="flex items-center gap-4 mb-8">
             <h2 className="text-4xl font-bold text-white">היקום</h2>
             <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
-          </div>
+                </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Characters */}
             <Link
@@ -464,12 +484,12 @@ export default function Home() {
                   <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                </div>
+                      </div>
                 <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors">דמויות</h3>
                 <p className="text-zinc-400 text-sm mb-4">גלה את כל הדמויות ביקום</p>
                 <div className="text-3xl font-bold text-blue-400">{wikiStats.characters}</div>
                 <div className="text-sm text-zinc-500 mt-1">ערכים</div>
-              </div>
+                    </div>
             </Link>
 
             {/* Programs */}
@@ -483,12 +503,12 @@ export default function Home() {
                   <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                </div>
+                          </div>
                 <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-purple-400 transition-colors">תכניות</h3>
                 <p className="text-zinc-400 text-sm mb-4">כל התכניות ביקום</p>
                 <div className="text-3xl font-bold text-purple-400">{wikiStats.programs}</div>
                 <div className="text-sm text-zinc-500 mt-1">ערכים</div>
-              </div>
+                        </div>
             </Link>
 
             {/* Advertisements */}
@@ -502,12 +522,12 @@ export default function Home() {
                   <svg className="w-8 h-8 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.533 9.5-3.5C19.532 4.5 22 8.5 22 13c0 1.76-.743 4.5-5.5 4.5s-7.5-2.5-7.5-2.5z" />
                   </svg>
-                </div>
+                      </div>
                 <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-pink-400 transition-colors">פרסומות</h3>
                 <p className="text-zinc-400 text-sm mb-4">פרסומות מהיקום</p>
                 <div className="text-3xl font-bold text-pink-400">{wikiStats.advertisements}</div>
                 <div className="text-sm text-zinc-500 mt-1">ערכים</div>
-              </div>
+                        </div>
             </Link>
 
             {/* Concepts */}
@@ -521,16 +541,16 @@ export default function Home() {
                   <svg className="w-8 h-8 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
-                </div>
+              </div>
                 <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-cyan-400 transition-colors">מושגים</h3>
                 <p className="text-zinc-400 text-sm mb-4">מושגים מרכזיים</p>
                 <div className="text-3xl font-bold text-cyan-400">{wikiStats.concepts}</div>
                 <div className="text-sm text-zinc-500 mt-1">ערכים</div>
-              </div>
+                </div>
             </Link>
-          </div>
+                </div>
         </section>
-      </div>
+            </div>
 
       <style jsx>{`
         @keyframes twinkle {
