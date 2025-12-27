@@ -46,10 +46,15 @@ export default function LoginPage() {
       setLoading(true);
       setMessage("");
 
+      // Get the correct redirect URL (use Vercel URL in production)
+      const redirectUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/`
+        : 'https://yekuma.vercel.app/';
+
       const { error } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: redirectUrl,
           shouldCreateUser: true,
         },
       });

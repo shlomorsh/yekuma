@@ -41,17 +41,75 @@ export default function Home() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Check authentication status
+  // Check authentication status and handle magic link
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        setAuthLoading(true);
+        
+        // Handle magic link callback from URL hash
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const errorParam = hashParams.get('error');
+        const errorDescription = hashParams.get('error_description');
+        
+        // If there's an error in the URL, show it
+        if (errorParam) {
+          console.error('Auth error:', errorParam, errorDescription);
+          alert(`שגיאת התחברות: ${errorDescription || errorParam}`);
+          // Clear the hash
+          window.history.replaceState(null, '', window.location.pathname);
+          setAuthLoading(false);
+          return;
+        }
+        
+        // If we have tokens in the URL, set the session
+        if (accessToken || refreshToken) {
+          console.log('Magic link detected, processing...');
+          
+          try {
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken || '',
+              refresh_token: refreshToken || ''
+            });
+            
+            if (sessionError) {
+              console.error('Error setting session:', sessionError);
+            } else if (sessionData?.session) {
+              console.log('Session set successfully');
+              setUser(sessionData.session.user);
+              await fetchUserProfile(sessionData.session.user.id);
+            }
+          } catch (err) {
+            console.error('Error in setSession:', err);
+          }
+          
+          // Wait a moment for Supabase to process
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Clear URL hash after processing
+          if (window.location.hash) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        }
+        
+        // Get the current session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+        }
+        
         if (session?.user) {
           setUser(session.user);
           await fetchUserProfile(session.user.id);
+        } else {
+          setUser(null);
+          setUserProfile(null);
         }
       } catch (err) {
-        console.error('Error checking session:', err);
+        console.error('Unexpected error checking session:', err);
       } finally {
         setAuthLoading(false);
       }
@@ -60,7 +118,15 @@ export default function Home() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      
+      // Clear URL hash if present
+      if (window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+      
       if (session?.user) {
+        console.log('Session established for:', session.user.email);
         setUser(session.user);
         await fetchUserProfile(session.user.id);
       } else {
