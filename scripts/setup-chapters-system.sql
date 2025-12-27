@@ -45,10 +45,11 @@ CREATE INDEX IF NOT EXISTS idx_chapters_order ON chapters(order_index);
 ALTER TABLE chapters ENABLE ROW LEVEL SECURITY;
 
 -- Step 6: Create RLS policies for chapters
--- Allow anyone to read chapters
+-- Allow anyone (including anonymous) to read chapters
 DROP POLICY IF EXISTS "Allow public read access" ON chapters;
 CREATE POLICY "Allow public read access" ON chapters
     FOR SELECT
+    TO public
     USING (true);
 
 -- Allow authenticated users to insert chapters
