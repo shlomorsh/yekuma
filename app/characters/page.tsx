@@ -39,13 +39,25 @@ export default function CharactersPage() {
         
         let data, error;
         try {
-          const result = await supabase
-            .from('characters')
-            .select('id, title, description, image_url, view_count, verified')
-            .order('title', { ascending: true });
+          console.log('[Characters] Making Supabase request...');
+          const result = await Promise.race([
+            supabase
+              .from('characters')
+              .select('id, title, description, image_url, view_count, verified')
+              .order('title', { ascending: true }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+            )
+          ]) as any;
           
-          data = result.data;
-          error = result.error;
+          if (result.error) {
+            error = result.error;
+            data = null;
+          } else {
+            data = result.data;
+            error = null;
+          }
+          
           console.log('[Characters] Fetch completed in', Date.now() - startTime, 'ms');
         } catch (err: any) {
           console.error('[Characters] Fetch exception:', err);

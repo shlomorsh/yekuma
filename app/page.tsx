@@ -254,13 +254,25 @@ export default function Home() {
         
         let chaptersData, chaptersError;
         try {
-          const result = await supabase
-            .from('chapters')
-            .select('id, title, description, video_url, image_url, order_index, created_at')
-            .order('order_index', { ascending: true });
+          console.log('[Home] Making Supabase request...');
+          const result = await Promise.race([
+            supabase
+              .from('chapters')
+              .select('id, title, description, video_url, image_url, order_index, created_at')
+              .order('order_index', { ascending: true }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+            )
+          ]) as any;
           
-          chaptersData = result.data;
-          chaptersError = result.error;
+          if (result.error) {
+            chaptersError = result.error;
+            chaptersData = null;
+          } else {
+            chaptersData = result.data;
+            chaptersError = null;
+          }
+          
           const elapsed = Date.now() - startTime;
           console.log('[Home] Chapters fetch completed in', elapsed, 'ms', {
             hasData: !!chaptersData,
@@ -343,14 +355,26 @@ export default function Home() {
         
         let data, error;
         try {
-          const result = await supabase
-            .from('characters')
-            .select('id, title, description, image_url, view_count, verified')
-            .order('title', { ascending: true })
-            .limit(12);
+          console.log('[Home] Making characters Supabase request...');
+          const result = await Promise.race([
+            supabase
+              .from('characters')
+              .select('id, title, description, image_url, view_count, verified')
+              .order('title', { ascending: true })
+              .limit(12),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+            )
+          ]) as any;
           
-          data = result.data;
-          error = result.error;
+          if (result.error) {
+            error = result.error;
+            data = null;
+          } else {
+            data = result.data;
+            error = null;
+          }
+          
           console.log('[Home] Characters fetch completed in', Date.now() - startTime, 'ms');
         } catch (err: any) {
           console.error('[Home] Characters fetch exception:', err);
@@ -394,11 +418,21 @@ export default function Home() {
         const startTime = Date.now();
         let programsRes, adsRes, conceptsRes;
         try {
-          [programsRes, adsRes, conceptsRes] = await Promise.all([
-            supabase.from('programs').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-            supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-            supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-          ]);
+          console.log('[Home] Making wiki items Supabase requests...');
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+          );
+          
+          const results = await Promise.race([
+            Promise.all([
+              supabase.from('programs').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
+              supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
+              supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
+            ]),
+            timeoutPromise
+          ]) as any;
+          
+          [programsRes, adsRes, conceptsRes] = results;
           console.log('[Home] Wiki items fetch completed in', Date.now() - startTime, 'ms');
         } catch (err: any) {
           console.error('[Home] Wiki items fetch exception:', err);
