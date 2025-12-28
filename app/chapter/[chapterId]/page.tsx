@@ -1048,7 +1048,7 @@ export default function ChapterPage() {
                       console.warn('Could not get video duration:', err);
                     }
                   }}
-                  onDuration={(duration) => {
+                  onDuration={(duration: number) => {
                     if (duration && duration > 0) {
                       setVideoDuration(duration);
                     }
