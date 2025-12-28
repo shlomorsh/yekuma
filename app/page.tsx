@@ -252,6 +252,19 @@ export default function Home() {
         console.log('[Home] Fetching chapters from Supabase...');
         const startTime = Date.now();
         
+        // Test connection first
+        try {
+          console.log('[Home] Testing Supabase connection...');
+          const testResult = await supabase.from('chapters').select('id').limit(1);
+          console.log('[Home] Connection test result:', {
+            hasData: !!testResult.data,
+            hasError: !!testResult.error,
+            error: testResult.error
+          });
+        } catch (testErr: any) {
+          console.error('[Home] Connection test failed:', testErr);
+        }
+        
         let chaptersData, chaptersError;
         try {
           console.log('[Home] Making Supabase request...');
@@ -265,12 +278,17 @@ export default function Home() {
             )
           ]) as any;
           
-          if (result.error) {
+          if (result && result.error) {
             chaptersError = result.error;
             chaptersData = null;
-          } else {
+            console.error('[Home] Supabase error:', result.error);
+          } else if (result && result.data !== undefined) {
             chaptersData = result.data;
             chaptersError = null;
+          } else {
+            console.error('[Home] Unexpected result format:', result);
+            chaptersError = new Error('Unexpected result format');
+            chaptersData = null;
           }
           
           const elapsed = Date.now() - startTime;

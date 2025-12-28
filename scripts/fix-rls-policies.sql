@@ -1,6 +1,13 @@
 -- Fix RLS policies to allow anonymous read access
 -- Run this in Supabase SQL Editor
 
+-- First, disable RLS temporarily to test
+-- ALTER TABLE chapters DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE characters DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE programs DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE advertisements DISABLE ROW LEVEL SECURITY;
+-- ALTER TABLE concepts DISABLE ROW LEVEL SECURITY;
+
 -- Fix chapters table RLS policy
 DROP POLICY IF EXISTS "Allow public read access" ON chapters;
 CREATE POLICY "Allow public read access" ON chapters
