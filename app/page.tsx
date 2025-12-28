@@ -51,6 +51,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [charactersLoading, setCharactersLoading] = useState(true);
   const [wikiItemsLoading, setWikiItemsLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -284,6 +285,7 @@ export default function Home() {
         setChapters([]);
     } finally {
         setLoading(false);
+        setInitialLoad(false);
       }
     };
 
@@ -459,7 +461,7 @@ export default function Home() {
             <h2 className="text-4xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>פרקים</h2>
             <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, #FFFFFF, transparent)' }} />
             </div>
-          {loading ? (
+          {loading && initialLoad ? (
             <div className="text-center py-12 text-zinc-400">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>

@@ -18,6 +18,7 @@ export default function CharactersPage() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -49,6 +50,7 @@ export default function CharactersPage() {
         setCharacters([]);
       } finally {
         setLoading(false);
+        setInitialLoad(false);
       }
     };
 
@@ -80,7 +82,7 @@ export default function CharactersPage() {
         </div>
 
         {/* Characters Grid */}
-        {loading ? (
+        {loading && initialLoad ? (
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
