@@ -414,8 +414,7 @@ export default function Home() {
         {/* Header */}
         <div className="mb-12 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {!authLoading && (
-              user ? (
+            {user ? (
                 <div className="flex items-center gap-3">
                   {userProfile && (
                     <span className="text-sm px-3 py-1 wireframe-border" style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}>
@@ -450,8 +449,7 @@ export default function Home() {
                 >
                   התחבר
                 </Link>
-              )
-            )}
+              )}
           </div>
         </div>
 
