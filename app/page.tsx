@@ -403,21 +403,21 @@ export default function Home() {
 
         // Add programs
         if (programsRes.data) {
-          programsRes.data.forEach(item => {
+          programsRes.data.forEach((item: any) => {
             allItems.push({ ...item, type: 'program' as const });
           });
         }
 
         // Add advertisements
         if (adsRes.data) {
-          adsRes.data.forEach(item => {
+          adsRes.data.forEach((item: any) => {
             allItems.push({ ...item, type: 'advertisement' as const });
           });
         }
 
         // Add concepts
         if (conceptsRes.data) {
-          conceptsRes.data.forEach(item => {
+          conceptsRes.data.forEach((item: any) => {
             allItems.push({ ...item, type: 'concept' as const });
           });
         }
