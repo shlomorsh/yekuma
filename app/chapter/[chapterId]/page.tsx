@@ -930,8 +930,8 @@ export default function ChapterPage() {
   });
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)', position: 'relative', zIndex: 1 }}>
+      <div className="container mx-auto px-4 py-8 max-w-7xl" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
