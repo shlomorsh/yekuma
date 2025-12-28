@@ -254,27 +254,11 @@ export default function Home() {
 
         if (chaptersError) {
           console.error('Error fetching chapters:', chaptersError);
-          // Fallback
-          setChapters([
-            { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
-            { id: '2', title: 'פרק 2', description: 'פרק שני של יקומות', video_url: 'https://www.youtube.com/watch?v=iSHIKkYQ-aI&t=327s', order_index: 1, created_at: new Date().toISOString() },
-            { id: '3', title: 'פרק 3', description: 'פרק שלישי של יקומות', video_url: 'https://www.youtube.com/watch?v=Ff8FRXPDk_w', order_index: 2, created_at: new Date().toISOString() },
-            { id: '4', title: 'פרק 4', description: 'פרק רביעי של יקומות', video_url: 'https://www.youtube.com/watch?v=N_PsQc4JMpg', order_index: 3, created_at: new Date().toISOString() },
-            { id: '5', title: 'פרק 5', description: 'פרק חמישי של יקומות', video_url: 'https://www.youtube.com/watch?v=oYljFReoQbc', order_index: 4, created_at: new Date().toISOString() },
-            { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
-          ]);
+          setChapters([]);
         } else if (chaptersData && chaptersData.length > 0) {
           setChapters(chaptersData);
         } else {
-          // Fallback - use string IDs that match the fallback in chapter page
-          setChapters([
-            { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
-            { id: '2', title: 'פרק 2', description: 'פרק שני של יקומות', video_url: 'https://www.youtube.com/watch?v=iSHIKkYQ-aI&t=327s', order_index: 1, created_at: new Date().toISOString() },
-            { id: '3', title: 'פרק 3', description: 'פרק שלישי של יקומות', video_url: 'https://www.youtube.com/watch?v=Ff8FRXPDk_w', order_index: 2, created_at: new Date().toISOString() },
-            { id: '4', title: 'פרק 4', description: 'פרק רביעי של יקומות', video_url: 'https://www.youtube.com/watch?v=N_PsQc4JMpg', order_index: 3, created_at: new Date().toISOString() },
-            { id: '5', title: 'פרק 5', description: 'פרק חמישי של יקומות', video_url: 'https://www.youtube.com/watch?v=oYljFReoQbc', order_index: 4, created_at: new Date().toISOString() },
-            { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
-          ]);
+          setChapters([]);
         }
 
         // Fetch wiki stats (with error handling)
@@ -296,15 +280,8 @@ export default function Home() {
           console.warn('Wiki stats not available yet');
         }
       } catch (err) {
-        // Set fallback chapters on error
-        setChapters([
-          { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0, created_at: new Date().toISOString() },
-          { id: '2', title: 'פרק 2', description: 'פרק שני של יקומות', video_url: 'https://www.youtube.com/watch?v=iSHIKkYQ-aI&t=327s', order_index: 1, created_at: new Date().toISOString() },
-          { id: '3', title: 'פרק 3', description: 'פרק שלישי של יקומות', video_url: 'https://www.youtube.com/watch?v=Ff8FRXPDk_w', order_index: 2, created_at: new Date().toISOString() },
-          { id: '4', title: 'פרק 4', description: 'פרק רביעי של יקומות', video_url: 'https://www.youtube.com/watch?v=N_PsQc4JMpg', order_index: 3, created_at: new Date().toISOString() },
-          { id: '5', title: 'פרק 5', description: 'פרק חמישי של יקומות', video_url: 'https://www.youtube.com/watch?v=oYljFReoQbc', order_index: 4, created_at: new Date().toISOString() },
-          { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5, created_at: new Date().toISOString() },
-        ]);
+        console.error('Unexpected error fetching chapters:', err);
+        setChapters([]);
     } finally {
         setLoading(false);
       }

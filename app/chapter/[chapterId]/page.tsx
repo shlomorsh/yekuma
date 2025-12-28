@@ -844,12 +844,25 @@ export default function ChapterPage() {
     );
   }
 
-  if (!chapter) {
+  if (loading && !chapter) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
           <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>טוען פרק...</div>
-          {loading && <div className="text-zinc-400">אנא המתן</div>}
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && !chapter) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
+        <div className="text-center">
+          <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>פרק לא נמצא</div>
+          <Link href="/" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
+            חזרה לדף הבית
+          </Link>
         </div>
       </div>
     );
