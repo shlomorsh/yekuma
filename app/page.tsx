@@ -431,6 +431,15 @@ export default function Home() {
     y: (mousePosition.y / window.innerHeight - 0.5) * 20,
   } : { x: 0, y: 0 };
 
+  console.log('[Home] Rendering with state:', {
+    loading,
+    initialLoad,
+    chaptersCount: chapters.length,
+    charactersCount: characters.length,
+    wikiItemsCount: wikiItems.length,
+    user: !!user
+  });
+
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative" style={{ fontFamily: 'var(--font-heebo)' }}>
       <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
