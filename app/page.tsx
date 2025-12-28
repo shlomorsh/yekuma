@@ -329,20 +329,24 @@ export default function Home() {
       try {
         console.log('[Home] Fetching characters...');
         setCharactersLoading(true);
-        const charactersPromise = supabase
-          .from('characters')
-          .select('id, title, description, image_url, view_count, verified')
-          .order('title', { ascending: true })
-          .limit(12);
+        const startTime = Date.now();
         
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout: Characters fetch took too long')), 10000)
-        );
-        
-        const { data, error } = await Promise.race([
-          charactersPromise,
-          timeoutPromise
-        ]) as any;
+        let data, error;
+        try {
+          const result = await supabase
+            .from('characters')
+            .select('id, title, description, image_url, view_count, verified')
+            .order('title', { ascending: true })
+            .limit(12);
+          
+          data = result.data;
+          error = result.error;
+          console.log('[Home] Characters fetch completed in', Date.now() - startTime, 'ms');
+        } catch (err: any) {
+          console.error('[Home] Characters fetch exception:', err);
+          error = err;
+          data = null;
+        }
 
         console.log('[Home] Characters fetch result:', { 
           hasData: !!data, 
@@ -377,18 +381,21 @@ export default function Home() {
         setWikiItemsLoading(true);
         
         // Fetch all items from the three tables - limit for performance
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout: Wiki items fetch took too long')), 10000)
-        );
-        
-        const [programsRes, adsRes, conceptsRes] = await Promise.race([
-          Promise.all([
+        const startTime = Date.now();
+        let programsRes, adsRes, conceptsRes;
+        try {
+          [programsRes, adsRes, conceptsRes] = await Promise.all([
             supabase.from('programs').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
             supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
             supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-          ]),
-          timeoutPromise
-        ]) as any;
+          ]);
+          console.log('[Home] Wiki items fetch completed in', Date.now() - startTime, 'ms');
+        } catch (err: any) {
+          console.error('[Home] Wiki items fetch exception:', err);
+          programsRes = { data: null, error: err };
+          adsRes = { data: null, error: err };
+          conceptsRes = { data: null, error: err };
+        }
 
         console.log('[Home] Wiki items fetch result:', {
           programs: programsRes.data?.length || 0,

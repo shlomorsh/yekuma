@@ -35,19 +35,23 @@ export default function CharactersPage() {
       try {
         console.log('[Characters] Starting to fetch characters...');
         setLoading(true);
-        const charactersPromise = supabase
-          .from('characters')
-          .select('id, title, description, image_url, view_count, verified')
-          .order('title', { ascending: true });
+        const startTime = Date.now();
         
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout: Characters fetch took too long')), 10000)
-        );
-        
-        const { data, error } = await Promise.race([
-          charactersPromise,
-          timeoutPromise
-        ]) as any;
+        let data, error;
+        try {
+          const result = await supabase
+            .from('characters')
+            .select('id, title, description, image_url, view_count, verified')
+            .order('title', { ascending: true });
+          
+          data = result.data;
+          error = result.error;
+          console.log('[Characters] Fetch completed in', Date.now() - startTime, 'ms');
+        } catch (err: any) {
+          console.error('[Characters] Fetch exception:', err);
+          error = err;
+          data = null;
+        }
 
         console.log('[Characters] Fetch result:', { 
           hasData: !!data, 
