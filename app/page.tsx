@@ -539,9 +539,10 @@ export default function Home() {
                         className="object-cover"
                         loading="lazy"
                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        unoptimized={chapter.image_url.includes('youtube.com') || chapter.image_url.includes('img.youtube.com')}
+                        unoptimized={chapter.image_url ? (chapter.image_url.includes('youtube.com') || chapter.image_url.includes('img.youtube.com')) : false}
                         onError={(e) => {
                           // Fallback to YouTube thumbnail if image fails
+                          if (!chapter.image_url) return;
                           const videoId = chapter.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
                           if (videoId && !chapter.image_url.includes(videoId)) {
                             e.currentTarget.src = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
