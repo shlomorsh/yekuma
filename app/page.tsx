@@ -248,12 +248,21 @@ export default function Home() {
       try {
         console.log('[Home] Starting to fetch data...');
         setLoading(true);
-        // Fetch chapters directly
+        // Fetch chapters directly with timeout
         console.log('[Home] Fetching chapters from Supabase...');
-        const { data: chaptersData, error: chaptersError } = await supabase
+        const chaptersPromise = supabase
           .from('chapters')
           .select('id, title, description, video_url, image_url, order_index, created_at')
           .order('order_index', { ascending: true });
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Chapters fetch took too long')), 10000)
+        );
+        
+        const { data: chaptersData, error: chaptersError } = await Promise.race([
+          chaptersPromise,
+          timeoutPromise
+        ]) as any;
 
         console.log('[Home] Chapters fetch result:', { 
           hasData: !!chaptersData, 
@@ -320,11 +329,20 @@ export default function Home() {
       try {
         console.log('[Home] Fetching characters...');
         setCharactersLoading(true);
-        const { data, error } = await supabase
+        const charactersPromise = supabase
           .from('characters')
           .select('id, title, description, image_url, view_count, verified')
           .order('title', { ascending: true })
-          .limit(12); // Limit to 12 characters for home page
+          .limit(12);
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Characters fetch took too long')), 10000)
+        );
+        
+        const { data, error } = await Promise.race([
+          charactersPromise,
+          timeoutPromise
+        ]) as any;
 
         console.log('[Home] Characters fetch result:', { 
           hasData: !!data, 
@@ -359,11 +377,18 @@ export default function Home() {
         setWikiItemsLoading(true);
         
         // Fetch all items from the three tables - limit for performance
-        const [programsRes, adsRes, conceptsRes] = await Promise.all([
-          supabase.from('programs').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-          supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-          supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-        ]);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Wiki items fetch took too long')), 10000)
+        );
+        
+        const [programsRes, adsRes, conceptsRes] = await Promise.race([
+          Promise.all([
+            supabase.from('programs').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
+            supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
+            supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
+          ]),
+          timeoutPromise
+        ]) as any;
 
         console.log('[Home] Wiki items fetch result:', {
           programs: programsRes.data?.length || 0,

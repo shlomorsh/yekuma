@@ -156,11 +156,20 @@ export default function ChapterPage() {
       try {
         console.log('[Chapter] Starting to fetch chapter:', chapterId);
         setLoading(true);
-        const { data, error } = await supabase
+        const chapterPromise = supabase
           .from('chapters')
           .select('id, title, description, video_url, image_url, order_index')
           .eq('id', chapterId)
           .single();
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Chapter fetch took too long')), 10000)
+        );
+        
+        const { data, error } = await Promise.race([
+          chapterPromise,
+          timeoutPromise
+        ]) as any;
 
         console.log('[Chapter] Fetch result:', { 
           hasData: !!data, 
