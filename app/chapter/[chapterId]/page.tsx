@@ -154,6 +154,7 @@ export default function ChapterPage() {
       if (!chapterId) return;
       
       try {
+        console.log('[Chapter] Starting to fetch chapter:', chapterId);
         setLoading(true);
         const { data, error } = await supabase
           .from('chapters')
@@ -161,25 +162,35 @@ export default function ChapterPage() {
           .eq('id', chapterId)
           .single();
 
+        console.log('[Chapter] Fetch result:', { 
+          hasData: !!data, 
+          hasError: !!error,
+          error: error,
+          chapterId: chapterId
+        });
+
         if (error) {
-          console.error('Error fetching chapter:', {
+          console.error('[Chapter] Error fetching chapter:', {
             message: error.message,
             code: error.code,
             details: error.details,
             chapterId: chapterId
           });
-          // Don't use fallback for UUIDs - show error instead
+          setLoading(false);
           return;
         }
 
         if (data) {
+          console.log('[Chapter] Setting chapter:', data.title);
           setChapter(data);
         } else {
+          console.log('[Chapter] No chapter data found');
           setLoading(false);
         }
       } catch (err) {
-        console.error('Unexpected error:', err);
+        console.error('[Chapter] Unexpected error:', err);
       } finally {
+        console.log('[Chapter] Finished fetching');
         setLoading(false);
       }
     };
