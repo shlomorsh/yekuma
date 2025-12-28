@@ -36,48 +36,45 @@ export default function CharactersPage() {
         console.log('[Characters] Starting to fetch characters...');
         setLoading(true);
         const startTime = Date.now();
-        
-        let data, error;
+
         try {
           console.log('[Characters] Making Supabase request...');
-          const result = await Promise.race([
-            supabase
-              .from('characters')
-              .select('id, title, description, image_url, view_count, verified')
-              .order('title', { ascending: true }),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
-            )
-          ]) as any;
           
-          if (result.error) {
-            error = result.error;
-            data = null;
-          } else {
-            data = result.data;
-            error = null;
-          }
+          // Create a timeout promise that rejects after 30 seconds
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000);
+          });
+
+          // Race between the Supabase query and the timeout
+          const queryPromise = supabase
+            .from('characters')
+            .select('id, title, description, image_url, view_count, verified')
+            .order('title', { ascending: true });
+
+          const result = await Promise.race([queryPromise, timeoutPromise]) as any;
           
           console.log('[Characters] Fetch completed in', Date.now() - startTime, 'ms');
+
+          if (result.error) {
+            console.error('[Characters] Error fetching characters:', result.error);
+            console.error('[Characters] Error details:', {
+              message: result.error.message,
+              code: result.error.code,
+              details: result.error.details,
+              hint: result.error.hint
+            });
+            setCharacters([]);
+          } else {
+            console.log('[Characters] Setting characters:', result.data?.length || 0);
+            setCharacters(result.data || []);
+          }
         } catch (err: any) {
-          console.error('[Characters] Fetch exception:', err);
-          error = err;
-          data = null;
-        }
-
-        console.log('[Characters] Fetch result:', { 
-          hasData: !!data, 
-          dataLength: data?.length, 
-          hasError: !!error,
-          error: error 
-        });
-
-        if (error) {
-          console.error('[Characters] Error fetching characters:', error);
+          if (err.message?.includes('timeout')) {
+            console.error('[Characters] Fetch timeout after 30 seconds');
+          } else {
+            console.error('[Characters] Fetch exception:', err);
+          }
           setCharacters([]);
-        } else {
-          console.log('[Characters] Setting characters:', data?.length || 0);
-          setCharacters(data || []);
         }
       } catch (err) {
         console.error('[Characters] Unexpected error:', err);

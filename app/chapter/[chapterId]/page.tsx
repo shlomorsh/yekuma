@@ -161,16 +161,20 @@ export default function ChapterPage() {
         let data, error;
         try {
           console.log('[Chapter] Making Supabase request...');
-          const result = await Promise.race([
-            supabase
-              .from('chapters')
-              .select('id, title, description, video_url, image_url, order_index')
-              .eq('id', chapterId)
-              .single(),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
-            )
-          ]) as any;
+          
+          // Create a timeout promise that rejects after 30 seconds
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000);
+          });
+
+          // Race between the Supabase query and the timeout
+          const queryPromise = supabase
+            .from('chapters')
+            .select('id, title, description, video_url, image_url, order_index')
+            .eq('id', chapterId)
+            .single();
+
+          const result = await Promise.race([queryPromise, timeoutPromise]) as any;
           
           if (result.error) {
             error = result.error;
