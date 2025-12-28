@@ -174,6 +174,8 @@ export default function ChapterPage() {
 
         if (data) {
           setChapter(data);
+        } else {
+          setLoading(false);
         }
       } catch (err) {
         console.error('Unexpected error:', err);
