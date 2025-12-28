@@ -248,21 +248,31 @@ export default function Home() {
       try {
         console.log('[Home] Starting to fetch data...');
         setLoading(true);
-        // Fetch chapters directly with timeout
+        // Fetch chapters directly
         console.log('[Home] Fetching chapters from Supabase...');
-        const chaptersPromise = supabase
-          .from('chapters')
-          .select('id, title, description, video_url, image_url, order_index, created_at')
-          .order('order_index', { ascending: true });
+        const startTime = Date.now();
         
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout: Chapters fetch took too long')), 10000)
-        );
-        
-        const { data: chaptersData, error: chaptersError } = await Promise.race([
-          chaptersPromise,
-          timeoutPromise
-        ]) as any;
+        let chaptersData, chaptersError;
+        try {
+          const result = await supabase
+            .from('chapters')
+            .select('id, title, description, video_url, image_url, order_index, created_at')
+            .order('order_index', { ascending: true });
+          
+          chaptersData = result.data;
+          chaptersError = result.error;
+          const elapsed = Date.now() - startTime;
+          console.log('[Home] Chapters fetch completed in', elapsed, 'ms', {
+            hasData: !!chaptersData,
+            dataLength: chaptersData?.length,
+            hasError: !!chaptersError,
+            error: chaptersError
+          });
+        } catch (err: any) {
+          console.error('[Home] Chapters fetch exception:', err);
+          chaptersError = err;
+          chaptersData = null;
+        }
 
         console.log('[Home] Chapters fetch result:', { 
           hasData: !!chaptersData, 

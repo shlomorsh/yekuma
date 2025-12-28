@@ -49,7 +49,6 @@ ALTER TABLE chapters ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read access" ON chapters;
 CREATE POLICY "Allow public read access" ON chapters
     FOR SELECT
-    TO public
     USING (true);
 
 -- Allow authenticated users to insert chapters
