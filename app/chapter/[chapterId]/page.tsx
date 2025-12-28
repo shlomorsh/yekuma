@@ -887,19 +887,6 @@ export default function ChapterPage() {
     }
   };
 
-  if (!chapter && !loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
-        <div className="text-center">
-          <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>פרק לא נמצא</p>
-          <Link href="/" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
-            חזרה לדף הבית
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   if (loading && !chapter) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
@@ -924,7 +911,15 @@ export default function ChapterPage() {
     );
   }
 
-  if (!chapter) return null;
+  if (!chapter) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
+        <div className="text-center">
+          <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>טוען פרק...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
@@ -984,6 +979,15 @@ export default function ChapterPage() {
           </div>
         </div>
 
+        {/* Chapter Description */}
+        {chapter.description && (
+          <div className="mb-6 wireframe-border p-4 bg-zinc-900/50">
+            <p className="text-zinc-300 leading-relaxed" style={{ fontFamily: 'var(--font-heebo)' }}>
+              {chapter.description}
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
@@ -992,7 +996,7 @@ export default function ChapterPage() {
               <button
                 onClick={handleAddReferenceClick}
                 disabled={!isReady || targetingMode}
-                className={`control-panel-btn ${targetingMode ? 'opacity-50' : ''}`}
+                className={`control-panel-btn ${targetingMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {targetingMode ? 'מצב כיוון פעיל...' : 'הוסף רפרנס'}
               </button>
