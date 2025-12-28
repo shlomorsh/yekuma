@@ -246,30 +246,49 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('[Home] Starting to fetch data...');
         setLoading(true);
         // Fetch chapters directly
+        console.log('[Home] Fetching chapters from Supabase...');
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
           .select('id, title, description, video_url, image_url, order_index, created_at')
           .order('order_index', { ascending: true });
 
+        console.log('[Home] Chapters fetch result:', { 
+          hasData: !!chaptersData, 
+          dataLength: chaptersData?.length, 
+          hasError: !!chaptersError,
+          error: chaptersError 
+        });
+
         if (chaptersError) {
-          console.error('Error fetching chapters:', chaptersError);
+          console.error('[Home] Error fetching chapters:', chaptersError);
           setChapters([]);
         } else if (chaptersData && chaptersData.length > 0) {
+          console.log('[Home] Setting chapters:', chaptersData.length);
           setChapters(chaptersData);
         } else {
+          console.log('[Home] No chapters found');
           setChapters([]);
         }
 
         // Fetch wiki stats (with error handling)
         try {
+          console.log('[Home] Fetching wiki stats...');
           const [charactersRes, programsRes, adsRes, conceptsRes] = await Promise.all([
             supabase.from('characters').select('id', { count: 'exact', head: true }),
             supabase.from('programs').select('id', { count: 'exact', head: true }),
             supabase.from('advertisements').select('id', { count: 'exact', head: true }),
             supabase.from('concepts').select('id', { count: 'exact', head: true }),
           ]);
+
+          console.log('[Home] Wiki stats:', {
+            characters: charactersRes.count,
+            programs: programsRes.count,
+            advertisements: adsRes.count,
+            concepts: conceptsRes.count
+          });
 
           setWikiStats({
             characters: charactersRes.count || 0,
@@ -278,18 +297,20 @@ export default function Home() {
             concepts: conceptsRes.count || 0,
           });
         } catch (err) {
-          console.warn('Wiki stats not available yet');
+          console.warn('[Home] Wiki stats not available:', err);
         }
       } catch (err) {
-        console.error('Unexpected error fetching chapters:', err);
+        console.error('[Home] Unexpected error fetching chapters:', err);
         setChapters([]);
     } finally {
+        console.log('[Home] Finished fetching, setting loading to false');
         setLoading(false);
         setInitialLoad(false);
       }
     };
 
     // Fetch immediately - no delay needed
+    console.log('[Home] useEffect triggered, starting fetch...');
     fetchData();
   }, []);
 
@@ -297,6 +318,7 @@ export default function Home() {
   useEffect(() => {
     const fetchCharacters = async () => {
       try {
+        console.log('[Home] Fetching characters...');
         setCharactersLoading(true);
         const { data, error } = await supabase
           .from('characters')
@@ -304,14 +326,22 @@ export default function Home() {
           .order('title', { ascending: true })
           .limit(12); // Limit to 12 characters for home page
 
+        console.log('[Home] Characters fetch result:', { 
+          hasData: !!data, 
+          dataLength: data?.length, 
+          hasError: !!error,
+          error: error 
+        });
+
         if (error) {
-          console.error('Error fetching characters:', error);
+          console.error('[Home] Error fetching characters:', error);
           setCharacters([]);
         } else {
+          console.log('[Home] Setting characters:', data?.length || 0);
           setCharacters(data || []);
         }
       } catch (err) {
-        console.error('Unexpected error:', err);
+        console.error('[Home] Unexpected error fetching characters:', err);
         setCharacters([]);
       } finally {
         setCharactersLoading(false);
@@ -325,6 +355,7 @@ export default function Home() {
   useEffect(() => {
     const fetchWikiItems = async () => {
       try {
+        console.log('[Home] Fetching wiki items...');
         setWikiItemsLoading(true);
         
         // Fetch all items from the three tables - limit for performance
@@ -333,6 +364,15 @@ export default function Home() {
           supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
           supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
         ]);
+
+        console.log('[Home] Wiki items fetch result:', {
+          programs: programsRes.data?.length || 0,
+          advertisements: adsRes.data?.length || 0,
+          concepts: conceptsRes.data?.length || 0,
+          programsError: programsRes.error,
+          adsError: adsRes.error,
+          conceptsError: conceptsRes.error
+        });
 
         const allItems: WikiItem[] = [];
 
@@ -397,7 +437,7 @@ export default function Home() {
         {/* Hero Section */}
         <div className="text-center mb-16 mt-12">
           <h1 
-            className="text-7xl md:text-9xl font-bold mb-6 glitch-text"
+            className="text-7xl md:text-9xl font-bold mb-4 glitch-text"
             style={{
               color: '#FFFFFF',
               fontFamily: 'var(--font-heebo)',
@@ -406,9 +446,9 @@ export default function Home() {
           >
             יקומה
           </h1>
-          <p className="text-xl md:text-2xl mb-8" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+          <h2 className="text-xl md:text-2xl mb-8" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
             היקום של יקומות
-          </p>
+          </h2>
         </div>
 
         {/* Header */}

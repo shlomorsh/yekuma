@@ -33,22 +33,32 @@ export default function CharactersPage() {
   useEffect(() => {
     const fetchCharacters = async () => {
       try {
+        console.log('[Characters] Starting to fetch characters...');
         setLoading(true);
         const { data, error } = await supabase
           .from('characters')
           .select('id, title, description, image_url, view_count, verified')
           .order('title', { ascending: true });
 
+        console.log('[Characters] Fetch result:', { 
+          hasData: !!data, 
+          dataLength: data?.length, 
+          hasError: !!error,
+          error: error 
+        });
+
         if (error) {
-          console.error('Error fetching characters:', error);
+          console.error('[Characters] Error fetching characters:', error);
           setCharacters([]);
         } else {
+          console.log('[Characters] Setting characters:', data?.length || 0);
           setCharacters(data || []);
         }
       } catch (err) {
-        console.error('Unexpected error:', err);
+        console.error('[Characters] Unexpected error:', err);
         setCharacters([]);
       } finally {
+        console.log('[Characters] Finished fetching');
         setLoading(false);
         setInitialLoad(false);
       }
