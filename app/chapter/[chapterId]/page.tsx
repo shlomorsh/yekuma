@@ -921,6 +921,14 @@ export default function ChapterPage() {
     );
   }
 
+  console.log('[Chapter] Rendering page with chapter:', {
+    id: chapter.id,
+    title: chapter.title,
+    hasVideoUrl: !!chapter.video_url,
+    videoUrl: chapter.video_url,
+    referencesCount: references.length
+  });
+
   return (
     <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
