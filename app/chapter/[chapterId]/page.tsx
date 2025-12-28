@@ -42,6 +42,7 @@ export default function ChapterPage() {
   const playerRef = useRef<any>(null);
   const [playing, setPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(600); // Default 10 minutes
   const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
   const [chapter, setChapter] = useState<Chapter | null>(null);
@@ -222,13 +223,22 @@ export default function ChapterPage() {
         setSelectedReference(ref);
         // Seek to the timestamp
         if (playerRef.current) {
-          const time = parseInt(timeParam);
-          if (typeof playerRef.current.currentTime === "number") {
-            playerRef.current.currentTime = time;
-          } else if (playerRef.current.seekTo) {
-            playerRef.current.seekTo(time, "seconds");
+          try {
+            const time = parseInt(timeParam);
+            if (playerRef.current.seekTo) {
+              playerRef.current.seekTo(time, "seconds");
+            } else if (playerRef.current.getInternalPlayer) {
+              const internalPlayer = playerRef.current.getInternalPlayer();
+              if (internalPlayer && typeof internalPlayer.seekTo === 'function') {
+                internalPlayer.seekTo(time);
+              } else if (internalPlayer && typeof internalPlayer.currentTime !== 'undefined') {
+                internalPlayer.currentTime = time;
+              }
+            }
+            setPlaying(true);
+          } catch (err) {
+            console.error('Error seeking to timestamp from URL:', err);
           }
-          setPlaying(true);
         }
         // Clean URL
         router.replace(`/chapter/${chapterId}`, { scroll: false });
@@ -239,10 +249,9 @@ export default function ChapterPage() {
   // Fetch references for this chapter
   useEffect(() => {
     const fetchReferences = async () => {
-      if (!chapterId) return;
+      if (!chapterId || !chapter) return;
       
       try {
-        setLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
         const currentUserId = session?.user?.id;
 
@@ -258,7 +267,6 @@ export default function ChapterPage() {
           if (refsError.code === '42P01' || refsError.code === '42703' || refsError.message?.includes('does not exist')) {
             console.warn('References table or chapter_id column does not exist yet. Please run setup-chapters-system.sql');
             setReferences([]);
-            setLoading(false);
             return;
           }
           console.error('Error fetching references:', {
@@ -268,7 +276,6 @@ export default function ChapterPage() {
             hint: refsError.hint
           });
           setReferences([]);
-          setLoading(false);
           return;
         }
 
@@ -376,13 +383,14 @@ export default function ChapterPage() {
         }
       } catch (err) {
         console.error('Unexpected error:', err);
-      } finally {
-        setLoading(false);
+        setReferences([]);
       }
     };
 
-    fetchReferences();
-  }, [chapterId, user]);
+    if (chapter) {
+      fetchReferences();
+    }
+  }, [chapterId, user, chapter]);
 
   // Fetch top contributors
   useEffect(() => {
@@ -407,12 +415,23 @@ export default function ChapterPage() {
 
   const handleReferenceClick = (reference: Reference) => {
     if (playerRef.current && isReady) {
-      if (typeof playerRef.current.currentTime === "number") {
-        playerRef.current.currentTime = reference.timestamp;
-        setPlaying(true);
-      } else if (playerRef.current.seekTo) {
-        playerRef.current.seekTo(reference.timestamp, "seconds");
-        setPlaying(true);
+      try {
+        // Try to seek using ReactPlayer's seekTo method
+        if (playerRef.current.seekTo) {
+          playerRef.current.seekTo(reference.timestamp, "seconds");
+          setPlaying(true);
+        } else if (playerRef.current.getInternalPlayer) {
+          const internalPlayer = playerRef.current.getInternalPlayer();
+          if (internalPlayer && typeof internalPlayer.seekTo === 'function') {
+            internalPlayer.seekTo(reference.timestamp);
+            setPlaying(true);
+          } else if (internalPlayer && typeof internalPlayer.currentTime !== 'undefined') {
+            internalPlayer.currentTime = reference.timestamp;
+            setPlaying(true);
+          }
+        }
+      } catch (err) {
+        console.error('Error seeking to timestamp:', err);
       }
     }
     setSelectedReference(reference);
@@ -439,9 +458,23 @@ export default function ChapterPage() {
   const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!targetingMode || !playerRef.current || !isReady) return;
 
-    const currentTime = typeof playerRef.current.currentTime === "number" 
-      ? Math.floor(playerRef.current.currentTime)
-      : 0;
+    let currentTime = 0;
+    
+    try {
+      // Try to get current time from ReactPlayer
+      if (playerRef.current.getCurrentTime) {
+        currentTime = Math.floor(playerRef.current.getCurrentTime());
+      } else if (playerRef.current.getInternalPlayer) {
+        const internalPlayer = playerRef.current.getInternalPlayer();
+        if (internalPlayer && typeof internalPlayer.getCurrentTime === 'function') {
+          currentTime = Math.floor(internalPlayer.getCurrentTime());
+        } else if (internalPlayer && typeof internalPlayer.currentTime === 'number') {
+          currentTime = Math.floor(internalPlayer.currentTime);
+        }
+      }
+    } catch (err) {
+      console.error('Error getting current time:', err);
+    }
 
     setFormData({
       timestamp: currentTime,
@@ -981,7 +1014,33 @@ export default function ChapterPage() {
                   playing={playing}
                   onPlay={() => setPlaying(true)}
                   onPause={() => setPlaying(false)}
-                  onReady={() => setIsReady(true)}
+                  onReady={() => {
+                    setIsReady(true);
+                    // Try to get video duration
+                    try {
+                      if (playerRef.current && playerRef.current.getDuration) {
+                        const duration = playerRef.current.getDuration();
+                        if (duration && duration > 0) {
+                          setVideoDuration(duration);
+                        }
+                      } else if (playerRef.current && playerRef.current.getInternalPlayer) {
+                        const internalPlayer = playerRef.current.getInternalPlayer();
+                        if (internalPlayer && typeof internalPlayer.getDuration === 'function') {
+                          const duration = internalPlayer.getDuration();
+                          if (duration && duration > 0) {
+                            setVideoDuration(duration);
+                          }
+                        }
+                      }
+                    } catch (err) {
+                      console.warn('Could not get video duration:', err);
+                    }
+                  }}
+                  onDuration={(duration) => {
+                    if (duration && duration > 0) {
+                      setVideoDuration(duration);
+                    }
+                  }}
                   controls={!targetingMode}
                   className="aspect-video"
                   config={{
@@ -1028,21 +1087,30 @@ export default function ChapterPage() {
               {/* Reference Pins - Blinking Red Dots */}
               {references.map((ref) => {
                 // Calculate pin position based on timestamp and video duration
-                // For now, we'll position them along the timeline
+                const positionPercent = videoDuration > 0 
+                  ? Math.min(100, Math.max(0, (ref.timestamp / videoDuration) * 100))
+                  : 0;
+                
                 return (
-                  <div
+                  <button
                     key={ref.id}
-                    className="blink-red absolute bottom-4"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleReferenceClick(ref);
+                    }}
+                    className="blink-red absolute bottom-4 cursor-pointer hover:scale-125 transition-transform"
                     style={{
-                      left: `${(ref.timestamp / 600) * 100}%`, // Approximate position
-                      width: '8px',
-                      height: '8px',
+                      left: `${positionPercent}%`,
+                      width: '12px',
+                      height: '12px',
                       borderRadius: '50%',
                       transform: 'translateX(-50%)',
                       zIndex: 10,
-                      pointerEvents: 'none',
+                      backgroundColor: selectedReference?.id === ref.id ? '#3b82f6' : '#ef4444',
+                      border: '2px solid white',
+                      pointerEvents: 'auto',
                     }}
-                    title={ref.title}
+                    title={`${ref.title} - ${formatTime(ref.timestamp)}`}
                   />
                 );
               })}
