@@ -269,18 +269,12 @@ export default function Home() {
         try {
           console.log('[Home] Making Supabase request...');
           
-          // Create a timeout promise that rejects after 30 seconds
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000);
-          });
-
-          // Race between the Supabase query and the timeout
-          const queryPromise = supabase
+          const { data, error } = await supabase
             .from('chapters')
             .select('id, title, description, video_url, image_url, order_index, created_at')
             .order('order_index', { ascending: true });
 
-          const result = await Promise.race([queryPromise, timeoutPromise]) as any;
+          const result = { data, error } as any;
 
           if (result && result.error) {
             chaptersError = result.error;
@@ -378,41 +372,34 @@ export default function Home() {
         try {
           console.log('[Home] Making characters Supabase request...');
           
-          // Create a timeout promise that rejects after 30 seconds
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000);
-          });
-
-          // Race between the Supabase query and the timeout
-          const queryPromise = supabase
+          const { data, error } = await supabase
             .from('characters')
             .select('id, title, description, image_url, view_count, verified')
             .order('title', { ascending: true })
             .limit(12);
 
-          const result = await Promise.race([queryPromise, timeoutPromise]) as any;
-
           console.log('[Home] Characters fetch completed in', Date.now() - startTime, 'ms');
 
-          if (result.error) {
-            console.error('[Home] Error fetching characters:', result.error);
+          if (error) {
+            console.error('[Home] Error fetching characters:', error);
             console.error('[Home] Error details:', {
-              message: result.error.message,
-              code: result.error.code,
-              details: result.error.details,
-              hint: result.error.hint
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint
             });
             setCharacters([]);
           } else {
-            console.log('[Home] Setting characters:', result.data?.length || 0);
-            setCharacters(result.data || []);
+            console.log('[Home] Setting characters:', data?.length || 0);
+            setCharacters(data || []);
           }
         } catch (err: any) {
-          if (err.message?.includes('timeout')) {
-            console.error('[Home] Characters fetch timeout after 30 seconds');
-          } else {
-            console.error('[Home] Characters fetch exception:', err);
-          }
+          console.error('[Home] Characters fetch exception:', err);
+          console.error('[Home] Exception details:', {
+            message: err.message,
+            name: err.name,
+            stack: err.stack
+          });
           setCharacters([]);
         }
       } catch (err) {
@@ -439,42 +426,35 @@ export default function Home() {
         try {
           console.log('[Home] Making universe_items Supabase request...');
           
-          // Create a timeout promise that rejects after 30 seconds
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000);
-          });
-
-          // Race between the Supabase query and the timeout
-          const queryPromise = supabase
+          const { data, error } = await supabase
             .from('universe_items')
             .select('id, title, description, image_url, view_count, verified, item_type')
             .order('created_at', { ascending: false })
             .limit(60);
 
-          const result = await Promise.race([queryPromise, timeoutPromise]) as any;
-
           console.log('[Home] Universe items fetch completed in', Date.now() - startTime, 'ms');
 
-          if (result.error) {
-            console.error('[Home] Universe items fetch error:', result.error);
+          if (error) {
+            console.error('[Home] Universe items fetch error:', error);
             console.error('[Home] Error details:', {
-              message: result.error.message,
-              code: result.error.code,
-              details: result.error.details,
-              hint: result.error.hint
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint
             });
             setWikiItems([]);
           } else {
             // Shuffle the array for variety
-            const shuffled = (result.data || []).sort(() => Math.random() - 0.5);
+            const shuffled = (data || []).sort(() => Math.random() - 0.5);
             setWikiItems(shuffled);
           }
         } catch (err: any) {
-          if (err.message?.includes('timeout')) {
-            console.error('[Home] Universe items fetch timeout after 30 seconds');
-          } else {
-            console.error('[Home] Universe items fetch exception:', err);
-          }
+          console.error('[Home] Universe items fetch exception:', err);
+          console.error('[Home] Exception details:', {
+            message: err.message,
+            name: err.name,
+            stack: err.stack
+          });
           setWikiItems([]);
         }
       } catch (err) {

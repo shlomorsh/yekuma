@@ -40,40 +40,33 @@ export default function CharactersPage() {
         try {
           console.log('[Characters] Making Supabase request...');
           
-          // Create a timeout promise that rejects after 30 seconds
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000);
-          });
-
-          // Race between the Supabase query and the timeout
-          const queryPromise = supabase
+          const { data, error } = await supabase
             .from('characters')
             .select('id, title, description, image_url, view_count, verified')
             .order('title', { ascending: true });
-
-          const result = await Promise.race([queryPromise, timeoutPromise]) as any;
           
           console.log('[Characters] Fetch completed in', Date.now() - startTime, 'ms');
 
-          if (result.error) {
-            console.error('[Characters] Error fetching characters:', result.error);
+          if (error) {
+            console.error('[Characters] Error fetching characters:', error);
             console.error('[Characters] Error details:', {
-              message: result.error.message,
-              code: result.error.code,
-              details: result.error.details,
-              hint: result.error.hint
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint
             });
             setCharacters([]);
           } else {
-            console.log('[Characters] Setting characters:', result.data?.length || 0);
-            setCharacters(result.data || []);
+            console.log('[Characters] Setting characters:', data?.length || 0);
+            setCharacters(data || []);
           }
         } catch (err: any) {
-          if (err.message?.includes('timeout')) {
-            console.error('[Characters] Fetch timeout after 30 seconds');
-          } else {
-            console.error('[Characters] Fetch exception:', err);
-          }
+          console.error('[Characters] Fetch exception:', err);
+          console.error('[Characters] Exception details:', {
+            message: err.message,
+            name: err.name,
+            stack: err.stack
+          });
           setCharacters([]);
         }
       } catch (err) {
