@@ -30,6 +30,7 @@ interface Chapter {
   title: string;
   description: string | null;
   video_url: string;
+  image_url: string | null;
   order_index: number;
 }
 
@@ -146,15 +147,6 @@ export default function ChapterPage() {
     }
   };
 
-  // Hardcoded chapters fallback
-  const fallbackChapters: Record<string, Chapter> = {
-    '1': { id: '1', title: 'פרק 1', description: 'פרק ראשון של יקומות', video_url: 'https://www.youtube.com/watch?v=yaY-3H2JN_c', order_index: 0 },
-    '2': { id: '2', title: 'פרק 2', description: 'פרק שני של יקומות', video_url: 'https://www.youtube.com/watch?v=iSHIKkYQ-aI&t=327s', order_index: 1 },
-    '3': { id: '3', title: 'פרק 3', description: 'פרק שלישי של יקומות', video_url: 'https://www.youtube.com/watch?v=Ff8FRXPDk_w', order_index: 2 },
-    '4': { id: '4', title: 'פרק 4', description: 'פרק רביעי של יקומות', video_url: 'https://www.youtube.com/watch?v=N_PsQc4JMpg', order_index: 3 },
-    '5': { id: '5', title: 'פרק 5', description: 'פרק חמישי של יקומות', video_url: 'https://www.youtube.com/watch?v=oYljFReoQbc', order_index: 4 },
-    '6': { id: '6', title: 'פרק 6', description: 'פרק שישי של יקומות', video_url: 'https://www.youtube.com/watch?v=UmOapfxyEZ0', order_index: 5 },
-  };
 
   // Fetch chapter
   useEffect(() => {
@@ -162,47 +154,31 @@ export default function ChapterPage() {
       if (!chapterId) return;
       
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from('chapters')
-          .select('*')
+          .select('id, title, description, video_url, image_url, order_index')
           .eq('id', chapterId)
           .single();
 
         if (error) {
-          // Check if table doesn't exist or chapter not found - use fallback
-          if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
-            console.warn('Chapters table does not exist or chapter not found, using fallback');
-            if (fallbackChapters[chapterId]) {
-              setChapter(fallbackChapters[chapterId]);
-            }
-            return;
-          }
           console.error('Error fetching chapter:', {
             message: error.message,
             code: error.code,
-            details: error.details
+            details: error.details,
+            chapterId: chapterId
           });
-          // Try fallback if chapter ID matches
-          if (fallbackChapters[chapterId]) {
-            setChapter(fallbackChapters[chapterId]);
-          }
+          // Don't use fallback for UUIDs - show error instead
           return;
         }
 
         if (data) {
           setChapter(data);
-        } else {
-          // No data found, try fallback
-          if (fallbackChapters[chapterId]) {
-            setChapter(fallbackChapters[chapterId]);
-          }
         }
       } catch (err) {
         console.error('Unexpected error:', err);
-        // Try fallback on error
-        if (fallbackChapters[chapterId]) {
-          setChapter(fallbackChapters[chapterId]);
-        }
+      } finally {
+        setLoading(false);
       }
     };
 

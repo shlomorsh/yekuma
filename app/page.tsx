@@ -11,6 +11,7 @@ interface Chapter {
   title: string;
   description: string | null;
   video_url: string;
+  image_url: string | null;
   order_index: number;
   created_at: string;
 }
@@ -248,7 +249,7 @@ export default function Home() {
         // Fetch chapters directly
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
-          .select('*')
+          .select('id, title, description, video_url, image_url, order_index, created_at')
           .order('order_index', { ascending: true });
 
         if (chaptersError) {
@@ -504,15 +505,26 @@ export default function Home() {
                   data-title={chapter.title}
                 >
                   <div className="relative aspect-video bg-black overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center z-0">
-                      <svg className="w-16 h-16" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                  </div>
+                    {chapter.image_url ? (
+                      <Image
+                        src={chapter.image_url}
+                        alt={chapter.title}
+                        fill
+                        className="object-cover"
+                        loading="lazy"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center z-0">
+                        <svg className="w-16 h-16" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    )}
                     <div className="absolute bottom-2 left-2 px-3 py-1 text-xs wireframe-border" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)', background: '#000000' }}>
                       פרק {chapter.order_index + 1}
-              </div>
+                    </div>
                   </div>
                   <div className="p-6 relative z-10">
                     <h3 className="text-xl font-bold mb-2 transition-colors" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
