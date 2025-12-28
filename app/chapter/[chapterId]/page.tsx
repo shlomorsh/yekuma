@@ -158,7 +158,6 @@ export default function ChapterPage() {
         setLoading(true);
         const startTime = Date.now();
         
-        let data, error;
         try {
           console.log('[Chapter] Making Supabase request...');
           
@@ -167,47 +166,35 @@ export default function ChapterPage() {
             .select('id, title, description, video_url, image_url, order_index')
             .eq('id', chapterId)
             .single();
-
-          const result = { data, error } as any;
-          
-          if (result.error) {
-            error = result.error;
-            data = null;
-          } else {
-            data = result.data;
-            error = null;
-          }
           
           console.log('[Chapter] Fetch completed in', Date.now() - startTime, 'ms');
+
+          if (error) {
+            console.error('[Chapter] Error fetching chapter:', {
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint,
+              chapterId: chapterId
+            });
+            setLoading(false);
+            return;
+          }
+
+          if (data) {
+            console.log('[Chapter] Setting chapter:', data.title);
+            setChapter(data);
+          } else {
+            console.log('[Chapter] No chapter data found');
+            setLoading(false);
+          }
         } catch (err: any) {
           console.error('[Chapter] Fetch exception:', err);
-          error = err;
-          data = null;
-        }
-
-        console.log('[Chapter] Fetch result:', { 
-          hasData: !!data, 
-          hasError: !!error,
-          error: error,
-          chapterId: chapterId
-        });
-
-        if (error) {
-          console.error('[Chapter] Error fetching chapter:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            chapterId: chapterId
+          console.error('[Chapter] Exception details:', {
+            message: err.message,
+            name: err.name,
+            stack: err.stack
           });
-          setLoading(false);
-          return;
-        }
-
-        if (data) {
-          console.log('[Chapter] Setting chapter:', data.title);
-          setChapter(data);
-        } else {
-          console.log('[Chapter] No chapter data found');
           setLoading(false);
         }
       } catch (err) {

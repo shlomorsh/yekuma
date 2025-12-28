@@ -265,7 +265,6 @@ export default function Home() {
           console.error('[Home] Connection test failed:', testErr);
         }
 
-        let chaptersData, chaptersError;
         try {
           console.log('[Home] Making Supabase request...');
           
@@ -274,49 +273,30 @@ export default function Home() {
             .select('id, title, description, video_url, image_url, order_index, created_at')
             .order('order_index', { ascending: true });
 
-          const result = { data, error } as any;
-
-          if (result && result.error) {
-            chaptersError = result.error;
-            chaptersData = null;
-            console.error('[Home] Supabase error:', result.error);
-          } else if (result && result.data !== undefined) {
-            chaptersData = result.data;
-            chaptersError = null;
-          } else {
-            console.error('[Home] Unexpected result format:', result);
-            chaptersError = new Error('Unexpected result format');
-            chaptersData = null;
-          }
-
           const elapsed = Date.now() - startTime;
           console.log('[Home] Chapters fetch completed in', elapsed, 'ms', {
-            hasData: !!chaptersData,
-            dataLength: chaptersData?.length,
-            hasError: !!chaptersError,
-            error: chaptersError
+            hasData: !!data,
+            dataLength: data?.length,
+            hasError: !!error,
+            error: error
           });
+
+          if (error) {
+            console.error('[Home] Supabase error:', error);
+            setChapters([]);
+          } else if (data) {
+            setChapters(data);
+          } else {
+            console.error('[Home] No data returned');
+            setChapters([]);
+          }
         } catch (err: any) {
           console.error('[Home] Chapters fetch exception:', err);
-          chaptersError = err;
-          chaptersData = null;
-        }
-
-        console.log('[Home] Chapters fetch result:', {
-          hasData: !!chaptersData,
-          dataLength: chaptersData?.length,
-          hasError: !!chaptersError,
-          error: chaptersError
-        });
-
-        if (chaptersError) {
-          console.error('[Home] Error fetching chapters:', chaptersError);
-          setChapters([]);
-        } else if (chaptersData && chaptersData.length > 0) {
-          console.log('[Home] Setting chapters:', chaptersData.length);
-          setChapters(chaptersData);
-        } else {
-          console.log('[Home] No chapters found');
+          console.error('[Home] Exception details:', {
+            message: err.message,
+            name: err.name,
+            stack: err.stack
+          });
           setChapters([]);
         }
 
