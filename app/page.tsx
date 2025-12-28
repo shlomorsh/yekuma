@@ -39,7 +39,7 @@ interface WikiItem {
   image_url: string | null;
   view_count: number;
   verified: boolean;
-  type: 'program' | 'advertisement' | 'concept';
+  item_type: 'program' | 'advertisement' | 'concept';
 }
 
 export default function Home() {
@@ -82,21 +82,21 @@ export default function Home() {
     const checkSession = async () => {
       try {
         setAuthLoading(true);
-        
+
         // Handle magic link callback from URL hash or query params
         // Check both hash (direct) and query params (Google redirect)
         if (typeof window === 'undefined') {
           setAuthLoading(false);
           return;
         }
-        
+
         const hash = window.location.hash.substring(1);
         const search = window.location.search.substring(1);
-        
+
         // Try to get tokens from hash first, then from query params
         let hashParams = new URLSearchParams(hash);
         let searchParams = new URLSearchParams(search);
-        
+
         // Check if there's a redirect URL in query (from Google)
         const redirectUrl = searchParams.get('q') || searchParams.get('url');
         if (redirectUrl) {
@@ -106,7 +106,7 @@ export default function Home() {
             const token = url.searchParams.get('token');
             const type = url.searchParams.get('type');
             const redirectTo = url.searchParams.get('redirect_to');
-            
+
             if (token && type === 'magiclink') {
               // This is a magic link - redirect to Supabase verify endpoint
               const verifyUrl = `${url.origin}${url.pathname}?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirectTo || 'https://yekuma.vercel.app/')}`;
@@ -117,12 +117,12 @@ export default function Home() {
             console.error('Error parsing redirect URL:', e);
           }
         }
-        
+
         const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
         const errorParam = hashParams.get('error') || searchParams.get('error');
         const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
-        
+
         // If there's an error in the URL, show it
         if (errorParam) {
           console.error('Auth error:', errorParam, errorDescription);
@@ -132,17 +132,17 @@ export default function Home() {
           setAuthLoading(false);
           return;
         }
-        
+
         // If we have tokens in the URL, set the session
         if (accessToken || refreshToken) {
           console.log('Magic link detected, processing...');
-          
+
           try {
             const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken || '',
               refresh_token: refreshToken || ''
             });
-            
+
             if (sessionError) {
               console.error('Error setting session:', sessionError);
               alert('שגיאה בהתחברות: ' + sessionError.message);
@@ -157,23 +157,23 @@ export default function Home() {
             console.error('Error in setSession:', err);
             alert('שגיאה בלתי צפויה בהתחברות');
           }
-          
+
           // Wait a moment for Supabase to process
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           // Clear URL hash/query after processing
           if (window.location.hash || window.location.search) {
             window.history.replaceState(null, '', window.location.pathname);
           }
         }
-        
+
         // Get the current session
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('Error getting session:', error);
         }
-        
+
         if (session?.user) {
           setUser(session.user);
           await fetchUserProfile(session.user.id);
@@ -192,12 +192,12 @@ export default function Home() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
-      
+
       // Clear URL hash if present
       if (typeof window !== 'undefined' && window.location.hash) {
         window.history.replaceState(null, '', window.location.pathname);
       }
-      
+
       if (session?.user) {
         console.log('Session established for:', session.user.email);
         setUser(session.user);
@@ -251,7 +251,7 @@ export default function Home() {
         // Fetch chapters directly
         console.log('[Home] Fetching chapters from Supabase...');
         const startTime = Date.now();
-        
+
         // Test connection first
         try {
           console.log('[Home] Testing Supabase connection...');
@@ -264,7 +264,7 @@ export default function Home() {
         } catch (testErr: any) {
           console.error('[Home] Connection test failed:', testErr);
         }
-        
+
         let chaptersData, chaptersError;
         try {
           console.log('[Home] Making Supabase request...');
@@ -273,11 +273,11 @@ export default function Home() {
               .from('chapters')
               .select('id, title, description, video_url, image_url, order_index, created_at')
               .order('order_index', { ascending: true }),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
             )
           ]) as any;
-          
+
           if (result && result.error) {
             chaptersError = result.error;
             chaptersData = null;
@@ -290,7 +290,7 @@ export default function Home() {
             chaptersError = new Error('Unexpected result format');
             chaptersData = null;
           }
-          
+
           const elapsed = Date.now() - startTime;
           console.log('[Home] Chapters fetch completed in', elapsed, 'ms', {
             hasData: !!chaptersData,
@@ -304,11 +304,11 @@ export default function Home() {
           chaptersData = null;
         }
 
-        console.log('[Home] Chapters fetch result:', { 
-          hasData: !!chaptersData, 
-          dataLength: chaptersData?.length, 
+        console.log('[Home] Chapters fetch result:', {
+          hasData: !!chaptersData,
+          dataLength: chaptersData?.length,
           hasError: !!chaptersError,
-          error: chaptersError 
+          error: chaptersError
         });
 
         if (chaptersError) {
@@ -351,7 +351,7 @@ export default function Home() {
       } catch (err) {
         console.error('[Home] Unexpected error fetching chapters:', err);
         setChapters([]);
-    } finally {
+      } finally {
         console.log('[Home] Finished fetching, setting loading to false');
         setLoading(false);
         setInitialLoad(false);
@@ -370,7 +370,7 @@ export default function Home() {
         console.log('[Home] Fetching characters...');
         setCharactersLoading(true);
         const startTime = Date.now();
-        
+
         let data, error;
         try {
           console.log('[Home] Making characters Supabase request...');
@@ -380,11 +380,11 @@ export default function Home() {
               .select('id, title, description, image_url, view_count, verified')
               .order('title', { ascending: true })
               .limit(12),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
             )
           ]) as any;
-          
+
           if (result.error) {
             error = result.error;
             data = null;
@@ -392,7 +392,7 @@ export default function Home() {
             data = result.data;
             error = null;
           }
-          
+
           console.log('[Home] Characters fetch completed in', Date.now() - startTime, 'ms');
         } catch (err: any) {
           console.error('[Home] Characters fetch exception:', err);
@@ -400,11 +400,11 @@ export default function Home() {
           data = null;
         }
 
-        console.log('[Home] Characters fetch result:', { 
-          hasData: !!data, 
-          dataLength: data?.length, 
+        console.log('[Home] Characters fetch result:', {
+          hasData: !!data,
+          dataLength: data?.length,
           hasError: !!error,
-          error: error 
+          error: error
         });
 
         if (error) {
@@ -431,69 +431,34 @@ export default function Home() {
       try {
         console.log('[Home] Fetching wiki items...');
         setWikiItemsLoading(true);
-        
-        // Fetch all items from the three tables - limit for performance
+
+        // Fetch all items from the unified universe_items table
         const startTime = Date.now();
-        let programsRes, adsRes, conceptsRes;
         try {
-          console.log('[Home] Making wiki items Supabase requests...');
-          const timeoutPromise = new Promise((_, reject) => 
+          console.log('[Home] Making universe_items Supabase request...');
+          const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
           );
-          
-          const results = await Promise.race([
-            Promise.all([
-              supabase.from('programs').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-              supabase.from('advertisements').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-              supabase.from('concepts').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(20),
-            ]),
+
+          const result = await Promise.race([
+            supabase.from('universe_items').select('id, title, description, image_url, view_count, verified, item_type').order('created_at', { ascending: false }).limit(60),
             timeoutPromise
           ]) as any;
-          
-          [programsRes, adsRes, conceptsRes] = results;
-          console.log('[Home] Wiki items fetch completed in', Date.now() - startTime, 'ms');
+
+          console.log('[Home] Universe items fetch completed in', Date.now() - startTime, 'ms');
+
+          if (result.error) {
+            console.error('[Home] Universe items fetch error:', result.error);
+            setWikiItems([]);
+          } else {
+            // Shuffle the array for variety
+            const shuffled = (result.data || []).sort(() => Math.random() - 0.5);
+            setWikiItems(shuffled);
+          }
         } catch (err: any) {
-          console.error('[Home] Wiki items fetch exception:', err);
-          programsRes = { data: null, error: err };
-          adsRes = { data: null, error: err };
-          conceptsRes = { data: null, error: err };
+          console.error('[Home] Universe items fetch exception:', err);
+          setWikiItems([]);
         }
-
-        console.log('[Home] Wiki items fetch result:', {
-          programs: programsRes.data?.length || 0,
-          advertisements: adsRes.data?.length || 0,
-          concepts: conceptsRes.data?.length || 0,
-          programsError: programsRes.error,
-          adsError: adsRes.error,
-          conceptsError: conceptsRes.error
-        });
-
-        const allItems: WikiItem[] = [];
-
-        // Add programs
-        if (programsRes.data) {
-          programsRes.data.forEach((item: any) => {
-            allItems.push({ ...item, type: 'program' as const });
-          });
-        }
-
-        // Add advertisements
-        if (adsRes.data) {
-          adsRes.data.forEach((item: any) => {
-            allItems.push({ ...item, type: 'advertisement' as const });
-          });
-        }
-
-        // Add concepts
-        if (conceptsRes.data) {
-          conceptsRes.data.forEach((item: any) => {
-            allItems.push({ ...item, type: 'concept' as const });
-          });
-        }
-
-        // Shuffle the array
-        const shuffled = allItems.sort(() => Math.random() - 0.5);
-        setWikiItems(shuffled);
       } catch (err) {
         console.error('Error fetching wiki items:', err);
         setWikiItems([]);
@@ -530,7 +495,7 @@ export default function Home() {
       <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
         {/* Hero Section */}
         <div className="text-center mb-16 mt-12">
-          <h1 
+          <h1
             className="text-7xl md:text-9xl font-bold mb-4 glitch-text"
             style={{
               color: '#FFFFFF',
@@ -549,41 +514,41 @@ export default function Home() {
         <div className="mb-12 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {user ? (
-                <div className="flex items-center gap-3">
-                  {userProfile && (
-                    <span className="text-sm px-3 py-1 wireframe-border" style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}>
-                      {userProfile.points || 0} נקודות
-                    </span>
-                  )}
-                  <div className="relative group">
-                    <button
-                      className="w-10 h-10 wireframe-border flex items-center justify-center font-semibold hover:scale-110 transition-transform"
-                      style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF', background: 'transparent' }}
-                    >
-                      {user.email?.charAt(0).toUpperCase() || 'U'}
-                    </button>
-                    <div className="absolute left-0 top-12 bg-black wireframe-border p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                      <div className="px-3 py-2 text-sm border-b" style={{ color: '#FFFFFF', borderColor: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                        {user.email}
-                      </div>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-right px-3 py-2 text-sm rounded mt-1 hover:bg-white/10"
-                        style={{ color: '#D62828', fontFamily: 'var(--font-mono)' }}
-                      >
-                        התנתק
-                      </button>
+              <div className="flex items-center gap-3">
+                {userProfile && (
+                  <span className="text-sm px-3 py-1 wireframe-border" style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}>
+                    {userProfile.points || 0} נקודות
+                  </span>
+                )}
+                <div className="relative group">
+                  <button
+                    className="w-10 h-10 wireframe-border flex items-center justify-center font-semibold hover:scale-110 transition-transform"
+                    style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF', background: 'transparent' }}
+                  >
+                    {user.email?.charAt(0).toUpperCase() || 'U'}
+                  </button>
+                  <div className="absolute left-0 top-12 bg-black wireframe-border p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                    <div className="px-3 py-2 text-sm border-b" style={{ color: '#FFFFFF', borderColor: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+                      {user.email}
                     </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-right px-3 py-2 text-sm rounded mt-1 hover:bg-white/10"
+                      style={{ color: '#D62828', fontFamily: 'var(--font-mono)' }}
+                    >
+                      התנתק
+                    </button>
                   </div>
                 </div>
-              ) : (
-                <Link
-                  href="/login"
-                  className="control-panel-btn"
-                >
-                  התחבר
-                </Link>
-              )}
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="control-panel-btn"
+              >
+                התחבר
+              </Link>
+            )}
           </div>
         </div>
 
@@ -592,7 +557,7 @@ export default function Home() {
           <div className="flex items-center gap-4 mb-8">
             <h2 className="text-4xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>פרקים</h2>
             <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, #FFFFFF, transparent)' }} />
-            </div>
+          </div>
           {loading && initialLoad ? (
             <div className="text-center py-12 text-zinc-400">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -660,12 +625,12 @@ export default function Home() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
+                    </div>
                   </div>
-                </div>
                 </Link>
               ))}
-              </div>
-            )}
+            </div>
+          )}
         </section>
 
         {/* Characters Section */}
@@ -761,7 +726,7 @@ export default function Home() {
             <div className="masonry-grid">
               {wikiItems.map((item) => {
                 const getTypeColors = () => {
-                  switch (item.type) {
+                  switch (item.item_type) {
                     case 'program':
                       return {
                         accentColor: '#008C9E',
@@ -778,7 +743,7 @@ export default function Home() {
                 };
 
                 const getTypeLabel = () => {
-                  switch (item.type) {
+                  switch (item.item_type) {
                     case 'program':
                       return 'תכנית';
                     case 'advertisement':
@@ -789,14 +754,7 @@ export default function Home() {
                 };
 
                 const getHref = () => {
-                  switch (item.type) {
-                    case 'program':
-                      return `/programs/${item.id}`;
-                    case 'advertisement':
-                      return `/advertisements/${item.id}`;
-                    case 'concept':
-                      return `/concepts/${item.id}`;
-                  }
+                  return `/universe/${item.id}`;
                 };
 
                 const colors = getTypeColors();
@@ -805,7 +763,7 @@ export default function Home() {
 
                 return (
                   <Link
-                    key={`${item.type}-${item.id}`}
+                    key={`${item.item_type}-${item.id}`}
                     href={href}
                     className="masonry-item wireframe-border overflow-hidden glitch-hover rgb-split"
                     style={{ background: 'transparent', minHeight: `${randomHeight}px` }}
@@ -824,13 +782,13 @@ export default function Home() {
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <svg className="w-16 h-16" style={{ color: colors.accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {item.type === 'program' && (
+                            {item.item_type === 'program' && (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             )}
-                            {item.type === 'advertisement' && (
+                            {item.item_type === 'advertisement' && (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.533 9.5-3.5C19.532 4.5 22 8.5 22 13c0 1.76-.743 4.5-5.5 4.5s-7.5-2.5-7.5-2.5z" />
                             )}
-                            {item.type === 'concept' && (
+                            {item.item_type === 'concept' && (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                             )}
                           </svg>
@@ -865,7 +823,7 @@ export default function Home() {
             </div>
           )}
         </section>
-            </div>
+      </div>
 
     </div>
   );
