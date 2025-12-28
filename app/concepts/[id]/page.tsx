@@ -220,6 +220,8 @@ export default function ConceptPage() {
     );
   }
 
+  if (!concept) return null;
+
   const contentSections = parseContent(concept.content);
 
   return (

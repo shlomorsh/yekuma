@@ -221,6 +221,8 @@ export default function AdvertisementPage() {
     );
   }
 
+  if (!advertisement) return null;
+
   const contentSections = parseContent(advertisement.content);
 
   return (

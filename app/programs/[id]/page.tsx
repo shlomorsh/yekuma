@@ -220,6 +220,8 @@ export default function ProgramPage() {
     );
   }
 
+  if (!program) return null;
+
   const contentSections = parseContent(program.content);
 
   return (
