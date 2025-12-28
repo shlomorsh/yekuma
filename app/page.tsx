@@ -425,10 +425,10 @@ export default function Home() {
               textShadow: '0 0 20px rgba(255, 107, 0, 0.5)',
             }}
           >
-            יקומות
+            יקומה
           </h1>
           <p className="text-xl md:text-2xl mb-8" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-            יקומה - היקום של יקומות
+            היקום של יקומות
           </p>
         </div>
 

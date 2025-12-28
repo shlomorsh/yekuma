@@ -26,7 +26,7 @@ const assistant = Assistant({
 });
 
 export const metadata: Metadata = {
-  title: "יקומה - היקום של יקומות",
+  title: "יקומה",
   description: "יקומה - היקום של יקומות - מערכת רפרנסים לפרקי יקומות",
 };
 
