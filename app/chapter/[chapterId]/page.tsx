@@ -185,6 +185,7 @@ export default function ChapterPage() {
           if (data) {
             console.log('[Chapter] Setting chapter:', data.title);
             setChapter(data);
+            setLoading(false);
           } else {
             console.log('[Chapter] No chapter data found');
             setLoading(false);
@@ -200,8 +201,6 @@ export default function ChapterPage() {
         }
       } catch (err) {
         console.error('[Chapter] Unexpected error:', err);
-      } finally {
-        console.log('[Chapter] Finished fetching');
         setLoading(false);
       }
     };
