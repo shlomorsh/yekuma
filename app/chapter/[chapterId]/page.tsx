@@ -43,6 +43,7 @@ export default function ChapterPage() {
   const [playing, setPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [videoDuration, setVideoDuration] = useState(600); // Default 10 minutes
+  const [videoError, setVideoError] = useState<string | null>(null);
   const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
   const [chapter, setChapter] = useState<Chapter | null>(null);
@@ -1017,52 +1018,89 @@ export default function ChapterPage() {
               onMouseMove={handleVideoMouseMove}
             >
               {chapter.video_url ? (
-                <ReactPlayer
-                  ref={playerRef}
-                  url={chapter.video_url}
-                  width="100%"
-                  height="100%"
-                  playing={playing}
-                  onPlay={() => setPlaying(true)}
-                  onPause={() => setPlaying(false)}
-                  onReady={() => {
-                    setIsReady(true);
-                    // Try to get video duration
-                    try {
-                      if (playerRef.current && playerRef.current.getDuration) {
-                        const duration = playerRef.current.getDuration();
-                        if (duration && duration > 0) {
-                          setVideoDuration(duration);
-                        }
-                      } else if (playerRef.current && playerRef.current.getInternalPlayer) {
-                        const internalPlayer = playerRef.current.getInternalPlayer();
-                        if (internalPlayer && typeof internalPlayer.getDuration === 'function') {
-                          const duration = internalPlayer.getDuration();
+                <>
+                  <ReactPlayer
+                    ref={playerRef}
+                    url={chapter.video_url}
+                    width="100%"
+                    height="100%"
+                    playing={playing}
+                    onPlay={() => {
+                      setPlaying(true);
+                      setVideoError(null);
+                    }}
+                    onPause={() => setPlaying(false)}
+                    onError={(error: any) => {
+                      console.error('[Chapter] Video player error:', error);
+                      setVideoError('שגיאה בטעינת הוידאו. נסה לרענן את הדף.');
+                    }}
+                    onReady={() => {
+                      console.log('[Chapter] Video player ready');
+                      setIsReady(true);
+                      setVideoError(null);
+                      // Try to get video duration
+                      try {
+                        if (playerRef.current && playerRef.current.getDuration) {
+                          const duration = playerRef.current.getDuration();
                           if (duration && duration > 0) {
                             setVideoDuration(duration);
+                            console.log('[Chapter] Video duration:', duration);
+                          }
+                        } else if (playerRef.current && playerRef.current.getInternalPlayer) {
+                          const internalPlayer = playerRef.current.getInternalPlayer();
+                          if (internalPlayer && typeof internalPlayer.getDuration === 'function') {
+                            const duration = internalPlayer.getDuration();
+                            if (duration && duration > 0) {
+                              setVideoDuration(duration);
+                              console.log('[Chapter] Video duration:', duration);
+                            }
                           }
                         }
+                      } catch (err) {
+                        console.warn('Could not get video duration:', err);
                       }
-                    } catch (err) {
-                      console.warn('Could not get video duration:', err);
-                    }
-                  }}
-                  onDuration={(duration: number) => {
-                    if (duration && duration > 0) {
-                      setVideoDuration(duration);
-                    }
-                  }}
-                  controls={!targetingMode}
-                  className="aspect-video"
-                  config={{
-                    youtube: {
-                      playerVars: {
-                        modestbranding: 1,
-                        rel: 0,
+                    }}
+                    onDuration={(duration: number) => {
+                      if (duration && duration > 0) {
+                        setVideoDuration(duration);
+                        console.log('[Chapter] Video duration from onDuration:', duration);
+                      }
+                    }}
+                    controls={!targetingMode}
+                    className="aspect-video"
+                    config={{
+                      youtube: {
+                        playerVars: {
+                          modestbranding: 1,
+                          rel: 0,
+                          autoplay: 0,
+                          enablejsapi: 1,
+                        },
                       },
-                    },
-                  }}
-                />
+                    }}
+                  />
+                  {videoError && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                      <div className="text-center p-4">
+                        <p className="text-red-400 mb-2">{videoError}</p>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          רענן דף
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {!isReady && !videoError && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                      <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
+                        <p className="text-white text-sm">טוען וידאו...</p>
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="aspect-video flex items-center justify-center">
                   <p className="text-zinc-400">אין קישור וידאו זמין</p>
