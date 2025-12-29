@@ -1020,15 +1020,27 @@ export default function ChapterPage() {
                 <>
                   {useFallback ? (
                     // Fallback: Direct YouTube iframe
-                    <div className="w-full h-full">
-                      <iframe
-                        src={`https://www.youtube.com/embed/${getYouTubeVideoId(chapter.video_url)}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
-                        className="w-full h-full aspect-video"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        title={chapter.title}
-                      />
-                    </div>
+                    (() => {
+                      const videoId = getYouTubeVideoId(chapter.video_url);
+                      if (!videoId) {
+                        return (
+                          <div className="w-full h-full flex items-center justify-center bg-black">
+                            <p className="text-red-400">שגיאה: לא ניתן לזהות את קישור הוידאו</p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="w-full h-full">
+                          <iframe
+                            src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                            className="w-full h-full aspect-video"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title={chapter.title}
+                          />
+                        </div>
+                      );
+                    })()
                   ) : typeof window !== 'undefined' ? (
                     <ReactPlayer
                     ref={playerRef}
