@@ -569,24 +569,32 @@ export default function ChapterPage() {
   };
 
   const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!targetingMode || !playerRef.current || !isReady) return;
+    if (!targetingMode) return;
 
     let currentTime = 0;
     
-    try {
-      // Try to get current time from ReactPlayer
-      if (playerRef.current.getCurrentTime) {
-        currentTime = Math.floor(playerRef.current.getCurrentTime());
-      } else if (playerRef.current.getInternalPlayer) {
-        const internalPlayer = playerRef.current.getInternalPlayer();
-        if (internalPlayer && typeof internalPlayer.getCurrentTime === 'function') {
-          currentTime = Math.floor(internalPlayer.getCurrentTime());
-        } else if (internalPlayer && typeof internalPlayer.currentTime === 'number') {
-          currentTime = Math.floor(internalPlayer.currentTime);
+    // If using fallback iframe, we can't get current time easily
+    // User will need to manually set the timestamp in the form
+    if (useFallback) {
+      // For iframe, we'll use 0 as default - user can edit it in the form
+      console.log('[Chapter] Using fallback iframe - timestamp will be 0, user can edit it');
+      currentTime = 0;
+    } else if (playerRef.current && isReady) {
+      try {
+        // Try to get current time from ReactPlayer
+        if (playerRef.current.getCurrentTime) {
+          currentTime = Math.floor(playerRef.current.getCurrentTime());
+        } else if (playerRef.current.getInternalPlayer) {
+          const internalPlayer = playerRef.current.getInternalPlayer();
+          if (internalPlayer && typeof internalPlayer.getCurrentTime === 'function') {
+            currentTime = Math.floor(internalPlayer.getCurrentTime());
+          } else if (internalPlayer && typeof internalPlayer.currentTime === 'number') {
+            currentTime = Math.floor(internalPlayer.currentTime);
+          }
         }
+      } catch (err) {
+        console.error('Error getting current time:', err);
       }
-    } catch (err) {
-      console.error('Error getting current time:', err);
     }
 
     setFormData({
@@ -1032,17 +1040,19 @@ export default function ChapterPage() {
                   )}
                   <div className="relative group">
                     <button
-                      className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold hover:bg-blue-700 transition-colors"
+                      className="w-10 h-10 wireframe-border flex items-center justify-center font-semibold hover:scale-110 transition-transform"
+                      style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF', background: 'transparent' }}
                     >
                       {email.charAt(0).toUpperCase()}
                     </button>
-                    <div className="absolute left-0 top-12 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                      <div className="px-3 py-2 text-sm text-zinc-300 border-b border-zinc-700">
+                    <div className="absolute left-0 top-12 bg-black wireframe-border p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                      <div className="px-3 py-2 text-sm border-b" style={{ color: '#FFFFFF', borderColor: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
                         {email}
                       </div>
                       <button
                         onClick={handleLogout}
-                        className="w-full text-right px-3 py-2 text-sm text-red-400 hover:bg-zinc-700 rounded mt-1"
+                        className="w-full text-right px-3 py-2 text-sm rounded mt-1 hover:bg-white/10"
+                        style={{ color: '#D62828', fontFamily: 'var(--font-mono)' }}
                       >
                         התנתק
                       </button>
@@ -1052,11 +1062,8 @@ export default function ChapterPage() {
               ) : (
                 <button
                   onClick={() => setShowContractModal(true)}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                  className="control-panel-btn"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
                   התחבר
                 </button>
               )
@@ -1080,7 +1087,7 @@ export default function ChapterPage() {
             <div className="flex justify-end">
               <button
                 onClick={handleAddReferenceClick}
-                disabled={!isReady || targetingMode}
+                disabled={targetingMode}
                 className={`control-panel-btn ${targetingMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {targetingMode ? 'מצב כיוון פעיל...' : 'הוסף רפרנס'}
@@ -1295,14 +1302,25 @@ export default function ChapterPage() {
                 <form onSubmit={handleSaveReference} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      זמן (נלכד מהוידאו)
+                      זמן (שניות) {useFallback && <span className="text-yellow-400 text-xs">(ערוך ידנית אם צריך)</span>}
                     </label>
-                    <input
-                      type="text"
-                      value={formatTime(formData.timestamp)}
-                      readOnly
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-400 cursor-not-allowed"
-                    />
+                    {useFallback ? (
+                      <input
+                        type="number"
+                        value={formData.timestamp}
+                        onChange={(e) => setFormData({ ...formData, timestamp: parseInt(e.target.value) || 0 })}
+                        min="0"
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="הכנס זמן בשניות"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={formatTime(formData.timestamp)}
+                        readOnly
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-400 cursor-not-allowed"
+                      />
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-2">
