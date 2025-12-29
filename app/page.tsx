@@ -264,25 +264,29 @@ export default function Home() {
         // Fetch wiki stats (with error handling)
         try {
           console.log('[Home] Fetching wiki stats...');
-          const [charactersRes, programsRes, adsRes, conceptsRes] = await Promise.all([
+          
+          const [charactersRes, universeItemsRes] = await Promise.all([
             supabase.from('characters').select('id', { count: 'exact', head: true }),
-            supabase.from('programs').select('id', { count: 'exact', head: true }),
-            supabase.from('advertisements').select('id', { count: 'exact', head: true }),
-            supabase.from('concepts').select('id', { count: 'exact', head: true }),
+            supabase.from('universe_items').select('id, item_type', { count: 'exact' }),
           ]);
+
+          // Count items by type from universe_items
+          const programsCount = universeItemsRes.data?.filter((item: any) => item.item_type === 'program').length || 0;
+          const adsCount = universeItemsRes.data?.filter((item: any) => item.item_type === 'advertisement').length || 0;
+          const conceptsCount = universeItemsRes.data?.filter((item: any) => item.item_type === 'concept').length || 0;
 
           console.log('[Home] Wiki stats:', {
             characters: charactersRes.count,
-            programs: programsRes.count,
-            advertisements: adsRes.count,
-            concepts: conceptsRes.count
+            programs: programsCount,
+            advertisements: adsCount,
+            concepts: conceptsCount
           });
 
           setWikiStats({
             characters: charactersRes.count || 0,
-            programs: programsRes.count || 0,
-            advertisements: adsRes.count || 0,
-            concepts: conceptsRes.count || 0,
+            programs: programsCount,
+            advertisements: adsCount,
+            concepts: conceptsCount,
           });
         } catch (err) {
           console.warn('[Home] Wiki stats not available:', err);
