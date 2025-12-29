@@ -367,7 +367,8 @@ export default function UniverseItemPage() {
                                                 // Check if line contains Hebrew characters
                                                 const hasHebrew = /[\u0590-\u05FF]/.test(line);
                                                 // Check if line contains only chords (letters, numbers, #, m, /, spaces)
-                                                const isChordLine = !hasHebrew && /^[A-Ga-g#mb0-9\s\/x]+$/.test(line.trim());
+                                                const chordPattern = new RegExp('^[A-Ga-g#mb0-9\\s/x]+$');
+                                                const isChordLine = !hasHebrew && chordPattern.test(line.trim());
                                                 
                                                 return (
                                                     <div 
@@ -439,52 +440,35 @@ export default function UniverseItemPage() {
                         </div>
                     )}
 
-                        {references.length > 0 && (
-                            <div className="wireframe-border p-6 bg-transparent">
-                                <h2 className="text-2xl font-bold mb-4 glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
-                                    רפרנסים קשורים
-                                </h2>
-                                <div className="space-y-2">
-                                    {references.map((ref) => (
-                                        <Link
-                                            key={ref.id}
-                                            href={`/chapter/${ref.chapter_id}?ref=${ref.id}&time=${ref.timestamp}`}
-                                            target="_blank"
-                                            className="block wireframe-border p-4 bg-transparent hover:bg-white/5 transition-colors"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <div className="font-medium mb-1" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>{ref.title}</div>
-                                                    <div className="text-sm" style={{ color: typeColor, fontFamily: 'var(--font-mono)' }}>
-                                                        {Math.floor(ref.timestamp / 60)}:{(ref.timestamp % 60).toString().padStart(2, '0')}
-                                                    </div>
+                    {references.length > 0 && (
+                        <div className="wireframe-border p-6 bg-transparent">
+                            <h2 className="text-2xl font-bold mb-4 glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
+                                רפרנסים קשורים
+                            </h2>
+                            <div className="space-y-2">
+                                {references.map((ref) => (
+                                    <Link
+                                        key={ref.id}
+                                        href={`/chapter/${ref.chapter_id}?ref=${ref.id}&time=${ref.timestamp}`}
+                                        target="_blank"
+                                        className="block wireframe-border p-4 bg-transparent hover:bg-white/5 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="font-medium mb-1" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>{ref.title}</div>
+                                                <div className="text-sm" style={{ color: typeColor, fontFamily: 'var(--font-mono)' }}>
+                                                    {Math.floor(ref.timestamp / 60)}:{(ref.timestamp % 60).toString().padStart(2, '0')}
                                                 </div>
-                                                <svg className="w-5 h-5" style={{ color: typeColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                </svg>
                                             </div>
-                                        </Link>
-                                    ))}
-                                </div>
+                                            <svg className="w-5 h-5" style={{ color: typeColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
+                                        </div>
+                                    </Link>
+                                ))}
                             </div>
-                        )}
-                    </div>
-
-                    <div className="lg:col-span-1 space-y-6">
-                        {item.image_url && (
-                            <div className="wireframe-border p-4 bg-transparent">
-                                <div className="relative aspect-square w-full">
-                                    <Image
-                                        src={item.image_url}
-                                        alt={item.title}
-                                        fill
-                                        className="object-cover"
-                                        unoptimized={item.image_url.includes('youtube.com') || item.image_url.includes('img.youtube.com')}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
