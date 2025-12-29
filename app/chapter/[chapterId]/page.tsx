@@ -1089,12 +1089,12 @@ export default function ChapterPage() {
                           </div>
                         );
                       }
-                      const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1${typeof window !== 'undefined' ? `&origin=${window.location.origin}` : ''}`;
+                      const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
                       return (
-                        <div className="w-full h-full">
+                        <div className="w-full h-full absolute inset-0">
                           <iframe
                             src={embedUrl}
-                            className="w-full h-full aspect-video"
+                            className="w-full h-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             title={chapter.title}
@@ -1197,7 +1197,7 @@ export default function ChapterPage() {
                       </div>
                     </div>
                   )}
-                  {!isReady && !videoError && !playerLoaded && (
+                  {!isReady && !videoError && !playerLoaded && !useFallback && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <div className="text-center">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
