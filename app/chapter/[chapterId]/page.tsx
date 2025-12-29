@@ -188,11 +188,18 @@ export default function ChapterPage() {
         try {
           console.log('[Chapter] Making Supabase request...');
           
-          const { data, error } = await supabase
+          // Add timeout to prevent hanging
+          const fetchPromise = supabase
             .from('chapters')
             .select('id, title, description, video_url, image_url, order_index')
             .eq('id', chapterId)
             .single();
+          
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Chapter fetch timeout after 10 seconds')), 10000);
+          });
+          
+          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
           
           console.log('[Chapter] Fetch completed in', Date.now() - startTime, 'ms');
 
@@ -228,7 +235,12 @@ export default function ChapterPage() {
             name: err.name,
             stack: err.stack
           });
+          // Set loading to false even on error
           setLoading(false);
+          // Show error message to user
+          if (err.message?.includes('timeout')) {
+            console.error('[Chapter] Chapter fetch timed out - this might be a network issue');
+          }
         }
       } catch (err) {
         console.error('[Chapter] Unexpected error:', err);
@@ -240,6 +252,11 @@ export default function ChapterPage() {
   }, [chapterId]);
 
   // Timeout for video loading - switch to fallback if ReactPlayer doesn't load
+  // Note: We wait a bit because ReactPlayer needs time to:
+  // 1. Load the module (dynamic import)
+  // 2. Initialize the YouTube player
+  // 3. Connect to YouTube API
+  // If we switch too early, we might interrupt a legitimate loading process
   useEffect(() => {
     if (chapter?.video_url && !isReady && !videoError && !playerLoaded && !useFallback) {
       console.log('[Chapter] Setting timeout for video loading...', {
@@ -263,7 +280,7 @@ export default function ChapterPage() {
           console.log('[Chapter] ReactPlayer failed to load, switching to iframe fallback');
           setUseFallback(true);
         }
-      }, 10000); // 10 seconds timeout before fallback
+      }, 3000); // 3 seconds timeout - enough for ReactPlayer to initialize, but not too long
 
       return () => clearTimeout(timeout);
     }
