@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import ContractModal from "@/app/components/ContractModal";
 
 interface Chapter {
   id: string;
@@ -56,6 +57,7 @@ export default function Home() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [showContractModal, setShowContractModal] = useState(false);
 
   // Track mouse for parallax effects - throttled for performance
   useEffect(() => {
@@ -77,98 +79,57 @@ export default function Home() {
     };
   }, []);
 
-  // Check authentication status and handle magic link
+  // Check authentication status and handle auto-login
   useEffect(() => {
     const checkSession = async () => {
       try {
         setAuthLoading(true);
 
-        // Handle magic link callback from URL hash or query params
-        // Check both hash (direct) and query params (Google redirect)
         if (typeof window === 'undefined') {
           setAuthLoading(false);
           return;
         }
 
-        const hash = window.location.hash.substring(1);
-        const search = window.location.search.substring(1);
+        // Get the current session first
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-        // Try to get tokens from hash first, then from query params
-        let hashParams = new URLSearchParams(hash);
-        let searchParams = new URLSearchParams(search);
-
-        // Check if there's a redirect URL in query (from Google)
-        const redirectUrl = searchParams.get('q') || searchParams.get('url');
-        if (redirectUrl) {
-          // Extract tokens from the redirected URL
-          try {
-            const url = new URL(decodeURIComponent(redirectUrl));
-            const token = url.searchParams.get('token');
-            const type = url.searchParams.get('type');
-            const redirectTo = url.searchParams.get('redirect_to');
-
-            if (token && type === 'magiclink') {
-              // This is a magic link - redirect to Supabase verify endpoint
-              const verifyUrl = `${url.origin}${url.pathname}?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirectTo || 'https://yekuma.vercel.app/')}`;
-              window.location.href = verifyUrl;
-              return;
-            }
-          } catch (e) {
-            console.error('Error parsing redirect URL:', e);
-          }
-        }
-
-        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
-        const errorParam = hashParams.get('error') || searchParams.get('error');
-        const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
-
-        // If there's an error in the URL, show it
-        if (errorParam) {
-          console.error('Auth error:', errorParam, errorDescription);
-          alert(`שגיאת התחברות: ${errorDescription || errorParam}`);
-          // Clear the hash/query
-          window.history.replaceState(null, '', window.location.pathname);
+        // If already logged in, skip auto-login
+        if (session?.user) {
+          setUser(session.user);
+          await fetchUserProfile(session.user.id);
           setAuthLoading(false);
           return;
         }
 
-        // If we have tokens in the URL, set the session
-        if (accessToken || refreshToken) {
-          console.log('Magic link detected, processing...');
-
+        // Try auto-login if credentials are saved and no session exists
+        const STORAGE_KEY = "yekumot_credentials";
+        const saved = localStorage.getItem(STORAGE_KEY);
+        
+        if (saved) {
           try {
-            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-              access_token: accessToken || '',
-              refresh_token: refreshToken || ''
-            });
+            const credentials = JSON.parse(saved);
+            if (credentials.email && credentials.password) {
+              // Try to sign in with saved credentials
+              const { data, error: signInError } = await supabase.auth.signInWithPassword({
+                email: credentials.email,
+                password: credentials.password,
+              });
 
-            if (sessionError) {
-              console.error('Error setting session:', sessionError);
-              alert('שגיאה בהתחברות: ' + sessionError.message);
-            } else if (sessionData?.session) {
-              console.log('Session set successfully');
-              setUser(sessionData.session.user);
-              await fetchUserProfile(sessionData.session.user.id);
-              // Show success message
-              alert('התחברת בהצלחה!');
+              if (!signInError && data?.session) {
+                setUser(data.session.user);
+                await fetchUserProfile(data.session.user.id);
+                setAuthLoading(false);
+                return;
+              } else {
+                // Auto-login failed, clear saved credentials
+                localStorage.removeItem(STORAGE_KEY);
+              }
             }
           } catch (err) {
-            console.error('Error in setSession:', err);
-            alert('שגיאה בלתי צפויה בהתחברות');
-          }
-
-          // Wait a moment for Supabase to process
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          // Clear URL hash/query after processing
-          if (window.location.hash || window.location.search) {
-            window.history.replaceState(null, '', window.location.pathname);
+            // Invalid saved credentials, clear them
+            localStorage.removeItem(STORAGE_KEY);
           }
         }
-
-        // Get the current session
-        const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
           console.error('Error getting session:', error);
@@ -455,6 +416,8 @@ export default function Home() {
         console.error('Error logging out:', error);
         return;
       }
+      // Clear saved credentials on logout
+      localStorage.removeItem("yekumot_credentials");
       setUser(null);
       setUserProfile(null);
     } catch (err) {
@@ -520,12 +483,12 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <Link
-                href="/login"
+              <button
+                onClick={() => setShowContractModal(true)}
                 className="control-panel-btn"
               >
                 התחבר
-              </Link>
+              </button>
             )}
           </div>
         </div>
@@ -803,6 +766,10 @@ export default function Home() {
         </section>
       </div>
 
+      <ContractModal 
+        isOpen={showContractModal} 
+        onClose={() => setShowContractModal(false)} 
+      />
     </div>
   );
 }

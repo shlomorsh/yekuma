@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import ContractModal from "@/app/components/ContractModal";
 
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as React.ComponentType<any>;
 
@@ -60,13 +61,10 @@ export default function ChapterPage() {
   // Authentication state
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginMessage, setLoginMessage] = useState("");
   const [userProfile, setUserProfile] = useState<any>(null);
   const [topContributors, setTopContributors] = useState<any[]>([]);
   const [authLoading, setAuthLoading] = useState(true);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
   const [showLinkedRefsModal, setShowLinkedRefsModal] = useState(false);
   const [availableReferences, setAvailableReferences] = useState<Reference[]>([]);
   const [loadingLinkedRefs, setLoadingLinkedRefs] = useState(false);
@@ -105,7 +103,6 @@ export default function ChapterPage() {
         setUser(session.user);
         setEmail(session.user.email || "");
         await fetchUserProfile(session.user.id);
-        setShowLoginModal(false);
       } else {
         setUser(null);
         setEmail("");
@@ -446,7 +443,7 @@ export default function ChapterPage() {
   const handleAddReferenceClick = () => {
     if (!user) {
       alert("אתה צריך להתחבר כדי להוסיף רפרנס. אנא התחבר תחילה.");
-      setShowLoginModal(true);
+      setShowContractModal(true);
       return;
     }
 
@@ -834,42 +831,6 @@ export default function ChapterPage() {
     window.open(url, '_blank');
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!loginEmail.trim()) {
-      setLoginMessage("אנא הכנס כתובת אימייל");
-      return;
-    }
-
-    try {
-      setLoginLoading(true);
-      setLoginMessage("");
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email: loginEmail,
-        options: {
-          emailRedirectTo: 'https://yekuma.vercel.app/',
-          shouldCreateUser: true,
-        },
-      });
-
-      if (error) {
-        setLoginMessage('שגיאה בשליחת קישור: ' + error.message);
-        return;
-      }
-
-      setLoginMessage("בדוק את האימייל שלך לקבלת קישור ההתחברות!");
-      setTimeout(() => {
-        setShowLoginModal(false);
-      }, 2000);
-    } catch (err) {
-      console.error('Unexpected error:', err);
-      setLoginMessage('שגיאה בלתי צפויה');
-    } finally {
-      setLoginLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -974,7 +935,7 @@ export default function ChapterPage() {
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowLoginModal(true)}
+                  onClick={() => setShowContractModal(true)}
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1566,69 +1527,11 @@ export default function ChapterPage() {
           </div>
         </div>
 
-        {/* Login Modal */}
-        {showLoginModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-800 w-full max-w-md">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-white">התחברות</h2>
-                <button
-                  onClick={() => {
-                    setShowLoginModal(false);
-                    setLoginMessage("");
-                  }}
-                  className="text-zinc-400 hover:text-white transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-2">
-                    כתובת אימייל
-                  </label>
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => {
-                      setLoginEmail(e.target.value);
-                      setLoginMessage("");
-                    }}
-                    placeholder="הכנס את כתובת האימייל שלך"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                {loginMessage && (
-                  <p className={`text-sm ${loginMessage.includes("בדוק") ? "text-green-400" : "text-red-400"}`}>
-                    {loginMessage}
-                  </p>
-                )}
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={loginLoading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg transition-colors duration-200"
-                  >
-                    {loginLoading ? "שולח..." : "שלח קישור התחברות"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowLoginModal(false);
-                      setLoginMessage("");
-                    }}
-                    className="px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold rounded-lg transition-colors duration-200"
-                  >
-                    ביטול
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* Contract Modal */}
+        <ContractModal 
+          isOpen={showContractModal} 
+          onClose={() => setShowContractModal(false)} 
+        />
 
         {/* Linked References Modal */}
         {showLinkedRefsModal && (
