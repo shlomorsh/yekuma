@@ -331,6 +331,12 @@ export default function CharacterPage() {
               )}
               <div className="flex items-center gap-4 text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
                 <span>{character.view_count || 0} צפיות</span>
+                {character.verified && (
+                  <span className="flex items-center gap-1" style={{ color: '#FF6B00' }}>
+                    <span>⭐</span>
+                    <span>מאומת</span>
+                  </span>
+                )}
               </div>
             </div>
             {user && (
@@ -399,6 +405,20 @@ export default function CharacterPage() {
               </div>
             ) : (
               <div className="space-y-6">
+                {/* Image */}
+                {character.image_url && (
+                  <div className="wireframe-border p-4 bg-transparent">
+                    <div className="relative aspect-square w-full max-w-md mx-auto">
+                      <Image
+                        src={character.image_url}
+                        alt={character.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Content Sections */}
                 {Object.keys(contentSections).length > 0 ? (
                   <div className="space-y-6">

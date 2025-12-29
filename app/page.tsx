@@ -77,15 +77,94 @@ export default function Home() {
     };
   }, []);
 
-  // Check authentication status (no auto-login)
+  // Check authentication status and handle magic link
   useEffect(() => {
     const checkSession = async () => {
       try {
         setAuthLoading(true);
 
+        // Handle magic link callback from URL hash or query params
+        // Check both hash (direct) and query params (Google redirect)
         if (typeof window === 'undefined') {
           setAuthLoading(false);
           return;
+        }
+
+        const hash = window.location.hash.substring(1);
+        const search = window.location.search.substring(1);
+
+        // Try to get tokens from hash first, then from query params
+        let hashParams = new URLSearchParams(hash);
+        let searchParams = new URLSearchParams(search);
+
+        // Check if there's a redirect URL in query (from Google)
+        const redirectUrl = searchParams.get('q') || searchParams.get('url');
+        if (redirectUrl) {
+          // Extract tokens from the redirected URL
+          try {
+            const url = new URL(decodeURIComponent(redirectUrl));
+            const token = url.searchParams.get('token');
+            const type = url.searchParams.get('type');
+            const redirectTo = url.searchParams.get('redirect_to');
+
+            if (token && type === 'magiclink') {
+              // This is a magic link - redirect to Supabase verify endpoint
+              const verifyUrl = `${url.origin}${url.pathname}?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirectTo || 'https://yekuma.vercel.app/')}`;
+              window.location.href = verifyUrl;
+              return;
+            }
+          } catch (e) {
+            console.error('Error parsing redirect URL:', e);
+          }
+        }
+
+        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+        const errorParam = hashParams.get('error') || searchParams.get('error');
+        const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
+
+        // If there's an error in the URL, show it
+        if (errorParam) {
+          console.error('Auth error:', errorParam, errorDescription);
+          alert(`שגיאת התחברות: ${errorDescription || errorParam}`);
+          // Clear the hash/query
+          window.history.replaceState(null, '', window.location.pathname);
+          setAuthLoading(false);
+          return;
+        }
+
+        // If we have tokens in the URL, set the session
+        if (accessToken || refreshToken) {
+          console.log('Magic link detected, processing...');
+
+          try {
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken || '',
+              refresh_token: refreshToken || ''
+            });
+
+            if (sessionError) {
+              console.error('Error setting session:', sessionError);
+              alert('שגיאה בהתחברות: ' + sessionError.message);
+            } else if (sessionData?.session) {
+              console.log('Session set successfully');
+              setUser(sessionData.session.user);
+              await fetchUserProfile(sessionData.session.user.id);
+              // Show success message
+              alert('התחברת בהצלחה!');
+            }
+          } catch (err) {
+            console.error('Error in setSession:', err);
+            alert('שגיאה בלתי צפויה בהתחברות');
+          }
+
+          // Wait a moment for Supabase to process
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Clear URL hash/query after processing
+          if (window.location.hash || window.location.search) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
         }
 
         // Get the current session
@@ -112,10 +191,18 @@ export default function Home() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      console.log('Auth state changed:', event, session?.user?.email);
+
+      // Clear URL hash if present
+      if (typeof window !== 'undefined' && window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+
+      if (session?.user) {
+        console.log('Session established for:', session.user.email);
         setUser(session.user);
         await fetchUserProfile(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
+      } else {
         setUser(null);
         setUserProfile(null);
       }
@@ -178,67 +265,85 @@ export default function Home() {
           console.error('[Home] Connection test failed:', testErr);
         }
 
+        let chaptersData, chaptersError;
         try {
           console.log('[Home] Making Supabase request...');
-          
-          const { data, error } = await supabase
-            .from('chapters')
-            .select('id, title, description, video_url, image_url, order_index, created_at')
-            .order('order_index', { ascending: true });
+          const result = await Promise.race([
+            supabase
+              .from('chapters')
+              .select('id, title, description, video_url, image_url, order_index, created_at')
+              .order('order_index', { ascending: true }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+            )
+          ]) as any;
+
+          if (result && result.error) {
+            chaptersError = result.error;
+            chaptersData = null;
+            console.error('[Home] Supabase error:', result.error);
+          } else if (result && result.data !== undefined) {
+            chaptersData = result.data;
+            chaptersError = null;
+          } else {
+            console.error('[Home] Unexpected result format:', result);
+            chaptersError = new Error('Unexpected result format');
+            chaptersData = null;
+          }
 
           const elapsed = Date.now() - startTime;
           console.log('[Home] Chapters fetch completed in', elapsed, 'ms', {
-            hasData: !!data,
-            dataLength: data?.length,
-            hasError: !!error,
-            error: error
+            hasData: !!chaptersData,
+            dataLength: chaptersData?.length,
+            hasError: !!chaptersError,
+            error: chaptersError
           });
-
-          if (error) {
-            console.error('[Home] Supabase error:', error);
-            setChapters([]);
-          } else if (data) {
-            setChapters(data);
-          } else {
-            console.error('[Home] No data returned');
-            setChapters([]);
-          }
         } catch (err: any) {
           console.error('[Home] Chapters fetch exception:', err);
-          console.error('[Home] Exception details:', {
-            message: err.message,
-            name: err.name,
-            stack: err.stack
-          });
+          chaptersError = err;
+          chaptersData = null;
+        }
+
+        console.log('[Home] Chapters fetch result:', {
+          hasData: !!chaptersData,
+          dataLength: chaptersData?.length,
+          hasError: !!chaptersError,
+          error: chaptersError
+        });
+
+        if (chaptersError) {
+          console.error('[Home] Error fetching chapters:', chaptersError);
+          setChapters([]);
+        } else if (chaptersData && chaptersData.length > 0) {
+          console.log('[Home] Setting chapters:', chaptersData.length);
+          setChapters(chaptersData);
+        } else {
+          console.log('[Home] No chapters found');
           setChapters([]);
         }
 
         // Fetch wiki stats (with error handling)
         try {
           console.log('[Home] Fetching wiki stats...');
-          
-          const [charactersRes, universeItemsRes] = await Promise.all([
+          const [charactersRes, programsRes, adsRes, conceptsRes] = await Promise.all([
             supabase.from('characters').select('id', { count: 'exact', head: true }),
-            supabase.from('universe_items').select('id, item_type', { count: 'exact' }),
+            supabase.from('programs').select('id', { count: 'exact', head: true }),
+            supabase.from('advertisements').select('id', { count: 'exact', head: true }),
+            supabase.from('concepts').select('id', { count: 'exact', head: true }),
           ]);
-
-          // Count items by type from universe_items
-          const programsCount = universeItemsRes.data?.filter((item: any) => item.item_type === 'program').length || 0;
-          const adsCount = universeItemsRes.data?.filter((item: any) => item.item_type === 'advertisement').length || 0;
-          const conceptsCount = universeItemsRes.data?.filter((item: any) => item.item_type === 'concept').length || 0;
 
           console.log('[Home] Wiki stats:', {
             characters: charactersRes.count,
-            programs: programsCount,
-            advertisements: adsCount,
-            concepts: conceptsCount
+            programs: programsRes.count,
+            advertisements: adsRes.count,
+            concepts: conceptsRes.count
           });
 
           setWikiStats({
             characters: charactersRes.count || 0,
-            programs: programsCount,
-            advertisements: adsCount,
-            concepts: conceptsCount,
+            programs: programsRes.count || 0,
+            advertisements: adsRes.count || 0,
+            concepts: conceptsRes.count || 0,
           });
         } catch (err) {
           console.warn('[Home] Wiki stats not available:', err);
@@ -266,38 +371,48 @@ export default function Home() {
         setCharactersLoading(true);
         const startTime = Date.now();
 
+        let data, error;
         try {
           console.log('[Home] Making characters Supabase request...');
-          
-          const { data, error } = await supabase
-            .from('characters')
-            .select('id, title, description, image_url, view_count, verified')
-            .order('title', { ascending: true })
-            .limit(12);
+          const result = await Promise.race([
+            supabase
+              .from('characters')
+              .select('id, title, description, image_url, view_count, verified')
+              .order('title', { ascending: true })
+              .limit(12),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+            )
+          ]) as any;
+
+          if (result.error) {
+            error = result.error;
+            data = null;
+          } else {
+            data = result.data;
+            error = null;
+          }
 
           console.log('[Home] Characters fetch completed in', Date.now() - startTime, 'ms');
-
-          if (error) {
-            console.error('[Home] Error fetching characters:', error);
-            console.error('[Home] Error details:', {
-              message: error.message,
-              code: error.code,
-              details: error.details,
-              hint: error.hint
-            });
-            setCharacters([]);
-          } else {
-            console.log('[Home] Setting characters:', data?.length || 0);
-            setCharacters(data || []);
-          }
         } catch (err: any) {
           console.error('[Home] Characters fetch exception:', err);
-          console.error('[Home] Exception details:', {
-            message: err.message,
-            name: err.name,
-            stack: err.stack
-          });
+          error = err;
+          data = null;
+        }
+
+        console.log('[Home] Characters fetch result:', {
+          hasData: !!data,
+          dataLength: data?.length,
+          hasError: !!error,
+          error: error
+        });
+
+        if (error) {
+          console.error('[Home] Error fetching characters:', error);
           setCharacters([]);
+        } else {
+          console.log('[Home] Setting characters:', data?.length || 0);
+          setCharacters(data || []);
         }
       } catch (err) {
         console.error('[Home] Unexpected error fetching characters:', err);
@@ -319,39 +434,29 @@ export default function Home() {
 
         // Fetch all items from the unified universe_items table
         const startTime = Date.now();
-
         try {
           console.log('[Home] Making universe_items Supabase request...');
-          
-          const { data, error } = await supabase
-            .from('universe_items')
-            .select('id, title, description, image_url, view_count, verified, item_type')
-            .order('created_at', { ascending: false })
-            .limit(60);
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+          );
+
+          const result = await Promise.race([
+            supabase.from('universe_items').select('id, title, description, image_url, view_count, verified, item_type').order('created_at', { ascending: false }).limit(60),
+            timeoutPromise
+          ]) as any;
 
           console.log('[Home] Universe items fetch completed in', Date.now() - startTime, 'ms');
 
-          if (error) {
-            console.error('[Home] Universe items fetch error:', error);
-            console.error('[Home] Error details:', {
-              message: error.message,
-              code: error.code,
-              details: error.details,
-              hint: error.hint
-            });
+          if (result.error) {
+            console.error('[Home] Universe items fetch error:', result.error);
             setWikiItems([]);
           } else {
             // Shuffle the array for variety
-            const shuffled = (data || []).sort(() => Math.random() - 0.5);
+            const shuffled = (result.data || []).sort(() => Math.random() - 0.5);
             setWikiItems(shuffled);
           }
         } catch (err: any) {
           console.error('[Home] Universe items fetch exception:', err);
-          console.error('[Home] Exception details:', {
-            message: err.message,
-            name: err.name,
-            stack: err.stack
-          });
           setWikiItems([]);
         }
       } catch (err) {
@@ -403,6 +508,12 @@ export default function Home() {
           <h2 className="text-xl md:text-2xl mb-8" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
             היקום של יקומות
           </h2>
+          <p className="text-lg md:text-xl mb-8 leading-relaxed" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.9 }}>
+            ברוכים הבאים ל.. מה זה משנה בכלל???<br />
+            תשחיזו שופורניים<br />
+            תמירו דומבה למרכז השדה<br />
+            ויאללה
+          </p>
         </div>
 
         {/* Header */}
@@ -577,6 +688,12 @@ export default function Home() {
                         </svg>
                       </div>
                     )}
+                    {character.verified && (
+                      <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
+                        <span>⭐</span>
+                        <span>מאומת</span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-4 text-layer">
                     <h3 className="text-lg font-bold mb-1 transition-colors" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
@@ -612,26 +729,53 @@ export default function Home() {
               <p>אין פריטים עדיין</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-              {wikiItems.map((item, index) => {
+            <div className="masonry-grid">
+              {wikiItems.map((item) => {
+                const getTypeColors = () => {
+                  switch (item.item_type) {
+                    case 'program':
+                      return {
+                        accentColor: '#008C9E',
+                      };
+                    case 'advertisement':
+                      return {
+                        accentColor: '#FF6B00',
+                      };
+                    case 'concept':
+                      return {
+                        accentColor: '#D62828',
+                      };
+                  }
+                };
+
+                const getTypeLabel = () => {
+                  switch (item.item_type) {
+                    case 'program':
+                      return 'תכנית';
+                    case 'advertisement':
+                      return 'פרסומת';
+                    case 'concept':
+                      return 'מושג';
+                  }
+                };
+
                 const getHref = () => {
                   return `/universe/${item.id}`;
                 };
 
+                const colors = getTypeColors();
                 const href = getHref();
+                const randomHeight = Math.floor(Math.random() * 200) + 300; // Varying heights for masonry
 
                 return (
                   <Link
                     key={`${item.item_type}-${item.id}`}
                     href={href}
-                    className="group relative wireframe-border overflow-hidden glitch-hover aspect-square"
-                    style={{
-                      animationDelay: `${index * 50}ms`,
-                      background: 'transparent',
-                    }}
+                    className="masonry-item wireframe-border overflow-hidden glitch-hover rgb-split"
+                    style={{ background: 'transparent', minHeight: `${randomHeight}px` }}
                     data-title={item.title}
                   >
-                    <div className="relative w-full h-full bg-black">
+                    <div className="relative bg-black" style={{ height: '200px' }}>
                       {item.image_url ? (
                         <Image
                           src={item.image_url}
@@ -639,11 +783,45 @@ export default function Home() {
                           fill
                           className="object-cover"
                           loading="lazy"
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-black" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg className="w-16 h-16" style={{ color: colors.accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {item.item_type === 'program' && (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            )}
+                            {item.item_type === 'advertisement' && (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.533 9.5-3.5C19.532 4.5 22 8.5 22 13c0 1.76-.743 4.5-5.5 4.5s-7.5-2.5-7.5-2.5z" />
+                            )}
+                            {item.item_type === 'concept' && (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            )}
+                          </svg>
+                        </div>
                       )}
+                      <div className="absolute top-2 right-2 px-2 py-1 text-xs wireframe-border" style={{ color: colors.accentColor, fontFamily: 'var(--font-mono)', background: '#000000' }}>
+                        {getTypeLabel()}
+                      </div>
+                      {item.verified && (
+                        <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
+                          <span>⭐</span>
+                          <span>מאומת</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-bold mb-1 transition-colors glitch-text" style={{ color: colors.accentColor, fontFamily: 'var(--font-heebo)' }}>
+                        {item.title}
+                      </h3>
+                      {item.description && (
+                        <p className="text-sm line-clamp-3 mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.7 }}>
+                          {item.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 text-xs" style={{ color: colors.accentColor, fontFamily: 'var(--font-mono)' }}>
+                        <span>{item.view_count || 0} צפיות</span>
+                      </div>
                     </div>
                   </Link>
                 );
@@ -653,22 +831,6 @@ export default function Home() {
         </section>
       </div>
 
-      {/* Footer */}
-      <footer className="mt-20 pb-8 text-center">
-        <p className="text-xs opacity-50" style={{ fontFamily: 'var(--font-mono)' }}>
-          נבנה ע"י{" "}
-          <a
-            href="https://wa.me/972507300706"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:opacity-75 transition-opacity"
-          >
-            שלומי
-          </a>
-        </p>
-      </footer>
-
     </div>
   );
 }
-

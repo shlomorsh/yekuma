@@ -36,38 +36,48 @@ export default function CharactersPage() {
         console.log('[Characters] Starting to fetch characters...');
         setLoading(true);
         const startTime = Date.now();
-
+        
+        let data, error;
         try {
           console.log('[Characters] Making Supabase request...');
+          const result = await Promise.race([
+            supabase
+              .from('characters')
+              .select('id, title, description, image_url, view_count, verified')
+              .order('title', { ascending: true }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+            )
+          ]) as any;
           
-          const { data, error } = await supabase
-            .from('characters')
-            .select('id, title, description, image_url, view_count, verified')
-            .order('title', { ascending: true });
+          if (result.error) {
+            error = result.error;
+            data = null;
+          } else {
+            data = result.data;
+            error = null;
+          }
           
           console.log('[Characters] Fetch completed in', Date.now() - startTime, 'ms');
-
-          if (error) {
-            console.error('[Characters] Error fetching characters:', error);
-            console.error('[Characters] Error details:', {
-              message: error.message,
-              code: error.code,
-              details: error.details,
-              hint: error.hint
-            });
-            setCharacters([]);
-          } else {
-            console.log('[Characters] Setting characters:', data?.length || 0);
-            setCharacters(data || []);
-          }
         } catch (err: any) {
           console.error('[Characters] Fetch exception:', err);
-          console.error('[Characters] Exception details:', {
-            message: err.message,
-            name: err.name,
-            stack: err.stack
-          });
+          error = err;
+          data = null;
+        }
+
+        console.log('[Characters] Fetch result:', { 
+          hasData: !!data, 
+          dataLength: data?.length, 
+          hasError: !!error,
+          error: error 
+        });
+
+        if (error) {
+          console.error('[Characters] Error fetching characters:', error);
           setCharacters([]);
+        } else {
+          console.log('[Characters] Setting characters:', data?.length || 0);
+          setCharacters(data || []);
         }
       } catch (err) {
         console.error('[Characters] Unexpected error:', err);
@@ -159,6 +169,12 @@ export default function CharactersPage() {
                         <svg className="w-16 h-16" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
+                      </div>
+                    )}
+                    {character.verified && (
+                      <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
+                        <span>⭐</span>
+                        <span>מאומת</span>
                       </div>
                     )}
                   </div>

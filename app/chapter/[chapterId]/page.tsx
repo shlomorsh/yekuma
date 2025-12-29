@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import ImageUploader from "@/app/components/ImageUploader";
+
+const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as React.ComponentType<any>;
 
 interface Reference {
   id: string;
@@ -37,13 +39,9 @@ export default function ChapterPage() {
   const router = useRouter();
   const chapterId = params.chapterId as string;
   
-  const youtubePlayerRef = useRef<any>(null); // For YouTube IFrame API
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const playerRef = useRef<any>(null);
   const [playing, setPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [videoDuration, setVideoDuration] = useState(600); // Default 10 minutes
-  const [videoError, setVideoError] = useState<string | null>(null);
-  const [youtubeAPIReady, setYoutubeAPIReady] = useState(false);
   const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
   const [chapter, setChapter] = useState<Chapter | null>(null);
@@ -60,14 +58,17 @@ export default function ChapterPage() {
   // Authentication state
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginMessage, setLoginMessage] = useState("");
   const [userProfile, setUserProfile] = useState<any>(null);
   const [topContributors, setTopContributors] = useState<any[]>([]);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [showLinkedRefsModal, setShowLinkedRefsModal] = useState(false);
   const [availableReferences, setAvailableReferences] = useState<Reference[]>([]);
   const [loadingLinkedRefs, setLoadingLinkedRefs] = useState(false);
   const [targetingMode, setTargetingMode] = useState(false);
-  const [showAddReferenceGuide, setShowAddReferenceGuide] = useState(false);
   const [crosshairPosition, setCrosshairPosition] = useState({ x: 0, y: 0 });
   const [isEditingReference, setIsEditingReference] = useState(false);
   const [editReferenceData, setEditReferenceData] = useState({
@@ -102,6 +103,7 @@ export default function ChapterPage() {
         setUser(session.user);
         setEmail(session.user.email || "");
         await fetchUserProfile(session.user.id);
+        setShowLoginModal(false);
       } else {
         setUser(null);
         setEmail("");
@@ -156,166 +158,70 @@ export default function ChapterPage() {
         setLoading(true);
         const startTime = Date.now();
         
+        let data, error;
         try {
           console.log('[Chapter] Making Supabase request...');
+          const result = await Promise.race([
+            supabase
+              .from('chapters')
+              .select('id, title, description, video_url, image_url, order_index')
+              .eq('id', chapterId)
+              .single(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
+            )
+          ]) as any;
           
-          // Add timeout to prevent hanging
-          const fetchPromise = supabase
-            .from('chapters')
-            .select('id, title, description, video_url, image_url, order_index')
-            .eq('id', chapterId)
-            .single();
-          
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Chapter fetch timeout after 10 seconds')), 10000);
-          });
-          
-          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+          if (result.error) {
+            error = result.error;
+            data = null;
+          } else {
+            data = result.data;
+            error = null;
+          }
           
           console.log('[Chapter] Fetch completed in', Date.now() - startTime, 'ms');
-
-          if (error) {
-            console.error('[Chapter] Error fetching chapter:', {
-              message: error.message,
-              code: error.code,
-              details: error.details,
-              hint: error.hint,
-              chapterId: chapterId
-            });
-            setLoading(false);
-            return;
-          }
-
-          if (data) {
-            console.log('[Chapter] Setting chapter:', data.title);
-            console.log('[Chapter] Video URL:', data.video_url);
-            // Validate video URL
-            if (data.video_url && !data.video_url.includes('youtube.com') && !data.video_url.includes('youtu.be')) {
-              console.warn('[Chapter] Video URL does not appear to be a YouTube URL:', data.video_url);
-            }
-            setChapter(data);
-            setLoading(false);
-          } else {
-            console.log('[Chapter] No chapter data found');
-            setLoading(false);
-          }
         } catch (err: any) {
           console.error('[Chapter] Fetch exception:', err);
-          console.error('[Chapter] Exception details:', {
-            message: err.message,
-            name: err.name,
-            stack: err.stack
+          error = err;
+          data = null;
+        }
+
+        console.log('[Chapter] Fetch result:', { 
+          hasData: !!data, 
+          hasError: !!error,
+          error: error,
+          chapterId: chapterId
+        });
+
+        if (error) {
+          console.error('[Chapter] Error fetching chapter:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            chapterId: chapterId
           });
-          // Set loading to false even on error
           setLoading(false);
-          // Show error message to user
-          if (err.message?.includes('timeout')) {
-            console.error('[Chapter] Chapter fetch timed out - this might be a network issue');
-          }
+          return;
+        }
+
+        if (data) {
+          console.log('[Chapter] Setting chapter:', data.title);
+          setChapter(data);
+        } else {
+          console.log('[Chapter] No chapter data found');
+          setLoading(false);
         }
       } catch (err) {
         console.error('[Chapter] Unexpected error:', err);
+      } finally {
+        console.log('[Chapter] Finished fetching');
         setLoading(false);
       }
     };
 
     fetchChapter();
   }, [chapterId]);
-
-  // No timeout needed - we use YouTube IFrame API directly
-
-  // Video duration is set in YouTube IFrame API onReady event
-
-  // Extract YouTube video ID for fallback
-  const getYouTubeVideoId = (url: string) => {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
-    return match ? match[1] : null;
-  };
-
-  // Load YouTube IFrame API
-  useEffect(() => {
-    if (typeof window === 'undefined' || !chapter?.video_url) return;
-    
-    const videoId = getYouTubeVideoId(chapter.video_url);
-    if (!videoId) return;
-
-    // Check if YouTube API is already loaded
-    if ((window as any).YT && (window as any).YT.Player) {
-      setYoutubeAPIReady(true);
-      return;
-    }
-
-    // Load YouTube IFrame API script
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-
-    // Wait for API to be ready
-    (window as any).onYouTubeIframeAPIReady = () => {
-      console.log('[Chapter] YouTube IFrame API ready');
-      setYoutubeAPIReady(true);
-    };
-
-    return () => {
-      // Cleanup
-      if ((window as any).onYouTubeIframeAPIReady) {
-        delete (window as any).onYouTubeIframeAPIReady;
-      }
-    };
-  }, [chapter?.video_url]);
-
-  // Initialize YouTube Player when API is ready
-  useEffect(() => {
-    if (!youtubeAPIReady || !chapter?.video_url) return;
-    if (!(window as any).YT || !(window as any).YT.Player) return;
-
-    const videoId = getYouTubeVideoId(chapter.video_url);
-    if (!videoId || youtubePlayerRef.current) return;
-
-    try {
-      youtubePlayerRef.current = new (window as any).YT.Player('youtube-player-iframe', {
-        videoId: videoId,
-        playerVars: {
-          enablejsapi: 1,
-          playsinline: 1,
-          modestbranding: 1,
-          rel: 0,
-          autoplay: 0,
-        },
-        events: {
-          onReady: (event: any) => {
-            console.log('[Chapter] YouTube IFrame API player ready');
-            try {
-              const duration = event.target.getDuration();
-              if (duration && duration > 0) {
-                setVideoDuration(duration);
-                setIsReady(true);
-                setVideoError(null);
-              }
-            } catch (err) {
-              console.warn('Could not get duration from YouTube API:', err);
-            }
-          },
-          onStateChange: (event: any) => {
-            // YouTube player states: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
-            if (event.data === 1) {
-              setPlaying(true);
-            } else if (event.data === 2) {
-              setPlaying(false);
-            }
-          },
-          onError: (event: any) => {
-            console.error('[Chapter] YouTube player error:', event.data);
-            setVideoError('שגיאה בטעינת הוידאו. נסה לרענן את הדף או לבדוק את הקישור.');
-          },
-        },
-      });
-    } catch (err) {
-      console.error('Error initializing YouTube IFrame API player:', err);
-      setVideoError('שגיאה באתחול נגן הוידאו. נסה לרענן את הדף.');
-    }
-  }, [youtubeAPIReady, chapter?.video_url]);
 
   // Handle URL parameters for opening specific reference
   useEffect(() => {
@@ -329,16 +235,15 @@ export default function ChapterPage() {
       const ref = references.find(r => r.id === refId);
       if (ref) {
         setSelectedReference(ref);
-        // Seek to the timestamp using YouTube IFrame API
-        if (youtubePlayerRef.current && typeof youtubePlayerRef.current.seekTo === 'function') {
-          try {
-            const time = parseInt(timeParam);
-            youtubePlayerRef.current.seekTo(time, true);
-            youtubePlayerRef.current.playVideo();
-            setPlaying(true);
-          } catch (err) {
-            console.error('Error seeking to timestamp from URL:', err);
+        // Seek to the timestamp
+        if (playerRef.current) {
+          const time = parseInt(timeParam);
+          if (typeof playerRef.current.currentTime === "number") {
+            playerRef.current.currentTime = time;
+          } else if (playerRef.current.seekTo) {
+            playerRef.current.seekTo(time, "seconds");
           }
+          setPlaying(true);
         }
         // Clean URL
         router.replace(`/chapter/${chapterId}`, { scroll: false });
@@ -349,9 +254,10 @@ export default function ChapterPage() {
   // Fetch references for this chapter
   useEffect(() => {
     const fetchReferences = async () => {
-      if (!chapterId || !chapter) return;
+      if (!chapterId) return;
       
       try {
+        setLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
         const currentUserId = session?.user?.id;
 
@@ -367,6 +273,7 @@ export default function ChapterPage() {
           if (refsError.code === '42P01' || refsError.code === '42703' || refsError.message?.includes('does not exist')) {
             console.warn('References table or chapter_id column does not exist yet. Please run setup-chapters-system.sql');
             setReferences([]);
+            setLoading(false);
             return;
           }
           console.error('Error fetching references:', {
@@ -376,6 +283,7 @@ export default function ChapterPage() {
             hint: refsError.hint
           });
           setReferences([]);
+          setLoading(false);
           return;
         }
 
@@ -483,14 +391,13 @@ export default function ChapterPage() {
         }
       } catch (err) {
         console.error('Unexpected error:', err);
-        setReferences([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (chapter) {
-      fetchReferences();
-    }
-  }, [chapterId, user, chapter]);
+    fetchReferences();
+  }, [chapterId, user]);
 
   // Fetch top contributors
   useEffect(() => {
@@ -514,16 +421,13 @@ export default function ChapterPage() {
   }, []);
 
   const handleReferenceClick = (reference: Reference) => {
-    if (youtubePlayerRef.current && isReady) {
-      try {
-        // Seek using YouTube IFrame API
-        if (typeof youtubePlayerRef.current.seekTo === 'function') {
-          youtubePlayerRef.current.seekTo(reference.timestamp, true);
-          youtubePlayerRef.current.playVideo();
-          setPlaying(true);
-        }
-      } catch (err) {
-        console.error('Error seeking to timestamp:', err);
+    if (playerRef.current && isReady) {
+      if (typeof playerRef.current.currentTime === "number") {
+        playerRef.current.currentTime = reference.timestamp;
+        setPlaying(true);
+      } else if (playerRef.current.seekTo) {
+        playerRef.current.seekTo(reference.timestamp, "seconds");
+        setPlaying(true);
       }
     }
     setSelectedReference(reference);
@@ -537,58 +441,22 @@ export default function ChapterPage() {
 
   const handleAddReferenceClick = () => {
     if (!user) {
-      router.push("/login");
+      alert("אתה צריך להתחבר כדי להוסיף רפרנס. אנא התחבר תחילה.");
+      setShowLoginModal(true);
       return;
     }
 
-    // Show guide modal first
-    setShowAddReferenceGuide(true);
-  };
-
-  const handleStartTargeting = () => {
-    // No need to check - we can always enable targeting mode
-    // We'll get the time from either ReactPlayer or YouTube IFrame API
-    setShowAddReferenceGuide(false);
-    // "מצב כיוון" - מצב שבו המשתמש יכול ללחוץ על הוידאו כדי לבחור את הזמן המדויק להוספת רפרנס
+    // Enable targeting mode
     setTargetingMode(true);
     setPlaying(false);
   };
 
-  const getCurrentTime = async (): Promise<number> => {
-    // Use YouTube IFrame API
-    if (youtubePlayerRef.current && typeof youtubePlayerRef.current.getCurrentTime === 'function') {
-      try {
-        const time = youtubePlayerRef.current.getCurrentTime();
-        if (time && !isNaN(time) && time >= 0) {
-          return Math.floor(time);
-        }
-      } catch (err) {
-        console.error('Error getting current time from YouTube API:', err);
-      }
-    }
-    
-    return 0;
-  };
+  const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!targetingMode || !playerRef.current || !isReady) return;
 
-  const handleVideoClick = async (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!targetingMode) return;
-    
-    // Prevent click if clicking on iframe directly
-    if ((e.target as HTMLElement).tagName === 'IFRAME') {
-      console.log('[Chapter] Clicked on iframe - trying to get time via API');
-      // Don't return - try to get time anyway
-    }
-
-    const currentTime = await getCurrentTime();
-    
-    if (currentTime === 0 && !isReady) {
-      // If we can't get time, show a message but still allow manual input
-      const userConfirmed = confirm('לא ניתן לקבל את הזמן המדויק אוטומטית. האם תרצה להזין את הזמן ידנית?');
-      if (!userConfirmed) {
-        setTargetingMode(false);
-        return;
-      }
-    }
+    const currentTime = typeof playerRef.current.currentTime === "number" 
+      ? Math.floor(playerRef.current.currentTime)
+      : 0;
 
     setFormData({
       timestamp: currentTime,
@@ -948,6 +816,42 @@ export default function ChapterPage() {
     window.open(url, '_blank');
   };
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!loginEmail.trim()) {
+      setLoginMessage("אנא הכנס כתובת אימייל");
+      return;
+    }
+
+    try {
+      setLoginLoading(true);
+      setLoginMessage("");
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: loginEmail,
+        options: {
+          emailRedirectTo: 'https://yekuma.vercel.app/',
+          shouldCreateUser: true,
+        },
+      });
+
+      if (error) {
+        setLoginMessage('שגיאה בשליחת קישור: ' + error.message);
+        return;
+      }
+
+      setLoginMessage("בדוק את האימייל שלך לקבלת קישור ההתחברות!");
+      setTimeout(() => {
+        setShowLoginModal(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setLoginMessage('שגיאה בלתי צפויה');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -964,6 +868,19 @@ export default function ChapterPage() {
       console.error('Unexpected error:', err);
     }
   };
+
+  if (!chapter && !loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
+        <div className="text-center">
+          <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>פרק לא נמצא</p>
+          <Link href="/" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
+            חזרה לדף הבית
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (loading && !chapter) {
     return (
@@ -989,27 +906,11 @@ export default function ChapterPage() {
     );
   }
 
-  if (!chapter) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
-        <div className="text-center">
-          <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>טוען פרק...</div>
-        </div>
-      </div>
-    );
-  }
-
-  console.log('[Chapter] Rendering page with chapter:', {
-    id: chapter.id,
-    title: chapter.title,
-    hasVideoUrl: !!chapter.video_url,
-    videoUrl: chapter.video_url,
-    referencesCount: references.length
-  });
+  if (!chapter) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)', position: 'relative', zIndex: 1 }}>
-      <div className="container mx-auto px-4 py-8 max-w-7xl" style={{ position: 'relative', zIndex: 2 }}>
+    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -1033,19 +934,17 @@ export default function ChapterPage() {
                   )}
                   <div className="relative group">
                     <button
-                      className="w-10 h-10 wireframe-border flex items-center justify-center font-semibold hover:scale-110 transition-transform"
-                      style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF', background: 'transparent' }}
+                      className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold hover:bg-blue-700 transition-colors"
                     >
                       {email.charAt(0).toUpperCase()}
                     </button>
-                    <div className="absolute left-0 top-12 bg-black wireframe-border p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                      <div className="px-3 py-2 text-sm border-b" style={{ color: '#FFFFFF', borderColor: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+                    <div className="absolute left-0 top-12 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                      <div className="px-3 py-2 text-sm text-zinc-300 border-b border-zinc-700">
                         {email}
                       </div>
                       <button
                         onClick={handleLogout}
-                        className="w-full text-right px-3 py-2 text-sm rounded mt-1 hover:bg-white/10"
-                        style={{ color: '#D62828', fontFamily: 'var(--font-mono)' }}
+                        className="w-full text-right px-3 py-2 text-sm text-red-400 hover:bg-zinc-700 rounded mt-1"
                       >
                         התנתק
                       </button>
@@ -1053,25 +952,19 @@ export default function ChapterPage() {
                   </div>
                 </div>
               ) : (
-                <Link
-                  href="/login"
-                  className="control-panel-btn"
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
                 >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
                   התחבר
-                </Link>
+                </button>
               )
             )}
           </div>
         </div>
-
-        {/* Chapter Description */}
-        {chapter.description && (
-          <div className="mb-6 wireframe-border p-4 bg-zinc-900/50">
-            <p className="text-zinc-300 leading-relaxed" style={{ fontFamily: 'var(--font-heebo)' }}>
-              {chapter.description}
-            </p>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Content */}
@@ -1080,8 +973,8 @@ export default function ChapterPage() {
             <div className="flex justify-end">
               <button
                 onClick={handleAddReferenceClick}
-                disabled={targetingMode}
-                className={`control-panel-btn ${targetingMode ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                disabled={!isReady || targetingMode}
+                className={`control-panel-btn ${targetingMode ? 'opacity-50' : ''}`}
               >
                 {targetingMode ? 'מצב כיוון פעיל...' : 'הוסף רפרנס'}
               </button>
@@ -1089,67 +982,32 @@ export default function ChapterPage() {
 
             {/* Video Player */}
             <div 
-              className="bg-black wireframe-border overflow-hidden relative aspect-video"
+              className="bg-black wireframe-border overflow-hidden relative"
               style={{ cursor: targetingMode ? 'crosshair' : 'default' }}
               onClick={handleVideoClick}
               onMouseMove={handleVideoMouseMove}
             >
               {chapter.video_url ? (
-                <>
-                  {(() => {
-                    const videoId = getYouTubeVideoId(chapter.video_url);
-                    if (!videoId) {
-                      return (
-                        <div className="w-full h-full flex items-center justify-center bg-black">
-                          <p className="text-red-400">שגיאה: לא ניתן לזהות את קישור הוידאו</p>
-                        </div>
-                      );
-                    }
-                    const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
-                    return (
-                      <div className="w-full h-full absolute inset-0">
-                        <iframe
-                          id="youtube-player-iframe"
-                          ref={iframeRef}
-                          src={embedUrl}
-                          className="w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          title={chapter.title}
-                          style={{ pointerEvents: targetingMode ? 'none' : 'auto' }}
-                        />
-                        {/* Overlay for targeting mode to capture clicks */}
-                        {targetingMode && (
-                          <div 
-                            className="absolute inset-0 z-10"
-                            style={{ pointerEvents: 'auto' }}
-                          />
-                        )}
-                      </div>
-                    );
-                  })()}
-                  {videoError && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-                      <div className="text-center p-4">
-                        <p className="text-red-400 mb-2">{videoError}</p>
-                        <button
-                          onClick={() => window.location.reload()}
-                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          רענן דף
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {!isReady && !videoError && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                      <div className="text-center">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
-                        <p className="text-white text-sm">טוען וידאו...</p>
-                      </div>
-                    </div>
-                  )}
-                </>
+                <ReactPlayer
+                  ref={playerRef}
+                  url={chapter.video_url}
+                  width="100%"
+                  height="100%"
+                  playing={playing}
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  onReady={() => setIsReady(true)}
+                  controls={!targetingMode}
+                  className="aspect-video"
+                  config={{
+                    youtube: {
+                      playerVars: {
+                        modestbranding: 1,
+                        rel: 0,
+                      },
+                    },
+                  }}
+                />
               ) : (
                 <div className="aspect-video flex items-center justify-center">
                   <p className="text-zinc-400">אין קישור וידאו זמין</p>
@@ -1185,30 +1043,21 @@ export default function ChapterPage() {
               {/* Reference Pins - Blinking Red Dots */}
               {references.map((ref) => {
                 // Calculate pin position based on timestamp and video duration
-                const positionPercent = videoDuration > 0 
-                  ? Math.min(100, Math.max(0, (ref.timestamp / videoDuration) * 100))
-                  : 0;
-                
+                // For now, we'll position them along the timeline
                 return (
-                  <button
+                  <div
                     key={ref.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleReferenceClick(ref);
-                    }}
-                    className="blink-red absolute bottom-4 cursor-pointer hover:scale-125 transition-transform"
+                    className="blink-red absolute bottom-4"
                     style={{
-                      left: `${positionPercent}%`,
-                      width: '12px',
-                      height: '12px',
+                      left: `${(ref.timestamp / 600) * 100}%`, // Approximate position
+                      width: '8px',
+                      height: '8px',
                       borderRadius: '50%',
                       transform: 'translateX(-50%)',
                       zIndex: 10,
-                      backgroundColor: selectedReference?.id === ref.id ? '#3b82f6' : '#ef4444',
-                      border: '2px solid white',
-                      pointerEvents: 'auto',
+                      pointerEvents: 'none',
                     }}
-                    title={`${ref.title} - ${formatTime(ref.timestamp)}`}
+                    title={ref.title}
                   />
                 );
               })}
@@ -1257,12 +1106,14 @@ export default function ChapterPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      תמונה (אופציונלי)
+                      כתובת תמונה (אופציונלי)
                     </label>
-                    <ImageUploader
+                    <input
+                      type="url"
                       value={formData.imageUrl}
-                      onChange={(url) => setFormData({ ...formData, imageUrl: url })}
-                      aspectRatio={4/3}
+                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="https://example.com/image.jpg"
                     />
                   </div>
                   <div className="flex gap-3 pt-2">
@@ -1296,10 +1147,20 @@ export default function ChapterPage() {
 
             {/* Reference Details */}
             {selectedReference && (
-              <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl p-6 shadow-2xl border-2 border-zinc-800">
+              <div className={`bg-zinc-900/80 backdrop-blur-sm rounded-xl p-6 shadow-2xl border-2 ${
+                selectedReference.verified 
+                  ? "border-yellow-500/50 bg-yellow-950/10" 
+                  : "border-zinc-800"
+              }`}>
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <h2 className="text-2xl font-bold text-white">פרטי רפרנס</h2>
+                    {selectedReference.verified && (
+                      <span className="flex items-center gap-1 text-yellow-400 font-semibold bg-yellow-950/30 px-3 py-1 rounded-lg border border-yellow-500/50">
+                        <span>⭐</span>
+                        <span>מאומת</span>
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {user && selectedReference.userId && selectedReference.userId !== user.id && !selectedReference.hasUserVerified && !selectedReference.verified && (
@@ -1545,6 +1406,11 @@ export default function ChapterPage() {
                                 }`}>
                                   {ref.title}
                                 </span>
+                                {ref.verified && (
+                                  <span className="text-yellow-400 text-xs" title="מאומת">
+                                    ⭐
+                                  </span>
+                                )}
                               </div>
                               <span className={`text-xs font-mono px-2 py-1 rounded ${
                                 selectedReference?.id === ref.id
@@ -1598,17 +1464,17 @@ export default function ChapterPage() {
           </div>
         </div>
 
-
-        {/* Add Reference Guide Modal */}
-        {showAddReferenceGuide && (
+        {/* Login Modal */}
+        {showLoginModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-black wireframe-border p-6 shadow-2xl w-full max-w-2xl mx-4">
+            <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-800 w-full max-w-md">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
-                  איך להוסיף רפרנס?
-                </h2>
+                <h2 className="text-2xl font-bold text-white">התחברות</h2>
                 <button
-                  onClick={() => setShowAddReferenceGuide(false)}
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    setLoginMessage("");
+                  }}
                   className="text-zinc-400 hover:text-white transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1616,53 +1482,48 @@ export default function ChapterPage() {
                   </svg>
                 </button>
               </div>
-              <div className="space-y-4 text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-orange-400" style={{ fontFamily: 'var(--font-mono)' }}>
-                    שלב 1: בחר זמן בווידאו
-                  </h3>
-                  <p className="text-zinc-300">
-                    לחץ על "התחל" למטה, ואז לחץ על הוידאו במקום שבו אתה רוצה להוסיף את הרפרנס.
-                    הזמן המדויק יילכד אוטומטית.
-                  </p>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">
+                    כתובת אימייל
+                  </label>
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => {
+                      setLoginEmail(e.target.value);
+                      setLoginMessage("");
+                    }}
+                    placeholder="הכנס את כתובת האימייל שלך"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-orange-400" style={{ fontFamily: 'var(--font-mono)' }}>
-                    שלב 2: מלא פרטים
-                  </h3>
-                  <p className="text-zinc-300">
-                    לאחר הלחיצה על הוידאו, ייפתח טופס שבו תוכל למלא:
+                {loginMessage && (
+                  <p className={`text-sm ${loginMessage.includes("בדוק") ? "text-green-400" : "text-red-400"}`}>
+                    {loginMessage}
                   </p>
-                  <ul className="list-disc list-inside text-zinc-300 space-y-1 mr-4">
-                    <li>כותרת (חובה)</li>
-                    <li>תיאור (אופציונלי)</li>
-                    <li>תמונה (אופציונלי)</li>
-                  </ul>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-orange-400" style={{ fontFamily: 'var(--font-mono)' }}>
-                    שלב 3: שמור
-                  </h3>
-                  <p className="text-zinc-300">
-                    לחץ על "שמור רפרנס" כדי לשמור את הרפרנס החדש.
-                  </p>
-                </div>
-                <div className="flex gap-3 pt-4">
+                )}
+                <div className="flex gap-3">
                   <button
-                    onClick={handleStartTargeting}
-                    className="flex-1 control-panel-btn"
+                    type="submit"
+                    disabled={loginLoading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg transition-colors duration-200"
                   >
-                    התחל
+                    {loginLoading ? "שולח..." : "שלח קישור התחברות"}
                   </button>
                   <button
-                    onClick={() => setShowAddReferenceGuide(false)}
-                    className="flex-1 wireframe-border px-4 py-2 bg-black hover:bg-white/10 transition-colors text-white"
-                    style={{ fontFamily: 'var(--font-mono)' }}
+                    type="button"
+                    onClick={() => {
+                      setShowLoginModal(false);
+                      setLoginMessage("");
+                    }}
+                    className="px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold rounded-lg transition-colors duration-200"
                   >
                     ביטול
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         )}
