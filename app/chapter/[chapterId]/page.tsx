@@ -68,12 +68,15 @@ export default function ChapterPage() {
   const chapterId = params.chapterId as string;
   
   const playerRef = useRef<any>(null);
+  const youtubePlayerRef = useRef<any>(null); // For YouTube IFrame API
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [videoDuration, setVideoDuration] = useState(600); // Default 10 minutes
   const [videoError, setVideoError] = useState<string | null>(null);
   const [playerLoaded, setPlayerLoaded] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
+  const [youtubeAPIReady, setYoutubeAPIReady] = useState(false);
   const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
   const [chapter, setChapter] = useState<Chapter | null>(null);
@@ -324,6 +327,84 @@ export default function ChapterPage() {
     return match ? match[1] : null;
   };
 
+  // Load YouTube IFrame API
+  useEffect(() => {
+    if (typeof window === 'undefined' || !chapter?.video_url) return;
+    
+    const videoId = getYouTubeVideoId(chapter.video_url);
+    if (!videoId) return;
+
+    // Check if YouTube API is already loaded
+    if ((window as any).YT && (window as any).YT.Player) {
+      setYoutubeAPIReady(true);
+      return;
+    }
+
+    // Load YouTube IFrame API script
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+    // Wait for API to be ready
+    (window as any).onYouTubeIframeAPIReady = () => {
+      console.log('[Chapter] YouTube IFrame API ready');
+      setYoutubeAPIReady(true);
+    };
+
+    return () => {
+      // Cleanup
+      if ((window as any).onYouTubeIframeAPIReady) {
+        delete (window as any).onYouTubeIframeAPIReady;
+      }
+    };
+  }, [chapter?.video_url]);
+
+  // Initialize YouTube Player when API is ready and using fallback
+  useEffect(() => {
+    if (!youtubeAPIReady || !useFallback || !chapter?.video_url) return;
+    if (!(window as any).YT || !(window as any).YT.Player) return;
+
+    const videoId = getYouTubeVideoId(chapter.video_url);
+    if (!videoId || youtubePlayerRef.current) return;
+
+    try {
+      youtubePlayerRef.current = new (window as any).YT.Player('youtube-player-iframe', {
+        videoId: videoId,
+        playerVars: {
+          enablejsapi: 1,
+          playsinline: 1,
+          modestbranding: 1,
+          rel: 0,
+        },
+        events: {
+          onReady: (event: any) => {
+            console.log('[Chapter] YouTube IFrame API player ready');
+            try {
+              const duration = event.target.getDuration();
+              if (duration && duration > 0) {
+                setVideoDuration(duration);
+                setIsReady(true);
+              }
+            } catch (err) {
+              console.warn('Could not get duration from YouTube API:', err);
+            }
+          },
+          onStateChange: (event: any) => {
+            // YouTube player states: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
+            if (event.data === 1) {
+              setPlaying(true);
+            } else if (event.data === 2) {
+              setPlaying(false);
+            }
+          },
+        },
+      });
+    } catch (err) {
+      console.error('Error initializing YouTube IFrame API player:', err);
+    }
+  }, [youtubeAPIReady, useFallback, chapter?.video_url]);
+
   // Handle URL parameters for opening specific reference
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -570,54 +651,82 @@ export default function ChapterPage() {
   };
 
   const handleStartTargeting = () => {
-    // Check if we can get current time (ReactPlayer must be ready)
-    if (useFallback && !isReady) {
-      alert("אנא המתן ל-ReactPlayer להיטען כדי לקבל את הזמן המדויק. אם זה לא עובד, נסה לרענן את הדף.");
-      setShowAddReferenceGuide(false);
-      return;
-    }
-
-    // Close guide and enable targeting mode
+    // No need to check - we can always enable targeting mode
+    // We'll get the time from either ReactPlayer or YouTube IFrame API
     setShowAddReferenceGuide(false);
     // "מצב כיוון" - מצב שבו המשתמש יכול ללחוץ על הוידאו כדי לבחור את הזמן המדויק להוספת רפרנס
     setTargetingMode(true);
     setPlaying(false);
   };
 
-  const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const getCurrentTime = async (): Promise<number> => {
+    // Try ReactPlayer first
+    if (playerRef.current && isReady) {
+      try {
+        if (playerRef.current.getCurrentTime) {
+          return Math.floor(playerRef.current.getCurrentTime());
+        } else if (playerRef.current.getInternalPlayer) {
+          const internalPlayer = playerRef.current.getInternalPlayer();
+          if (internalPlayer && typeof internalPlayer.getCurrentTime === 'function') {
+            return Math.floor(internalPlayer.getCurrentTime());
+          } else if (internalPlayer && typeof internalPlayer.currentTime === 'number') {
+            return Math.floor(internalPlayer.currentTime);
+          }
+        }
+      } catch (err) {
+        console.error('Error getting current time from ReactPlayer:', err);
+      }
+    }
+    
+    // Try YouTube IFrame API
+    if (youtubePlayerRef.current && typeof youtubePlayerRef.current.getCurrentTime === 'function') {
+      try {
+        const time = youtubePlayerRef.current.getCurrentTime();
+        if (time && !isNaN(time)) {
+          return Math.floor(time);
+        }
+      } catch (err) {
+        console.error('Error getting current time from YouTube API:', err);
+      }
+    }
+    
+    // Fallback: try to get from iframe via postMessage
+    if (iframeRef.current && chapter?.video_url) {
+      try {
+        const videoId = getYouTubeVideoId(chapter.video_url);
+        if (videoId) {
+          // Try to get time via postMessage (this might not work due to CORS)
+          iframeRef.current.contentWindow?.postMessage(
+            JSON.stringify({ event: 'command', func: 'getCurrentTime', args: '' }),
+            'https://www.youtube.com'
+          );
+        }
+      } catch (err) {
+        console.error('Error getting time from iframe:', err);
+      }
+    }
+    
+    return 0;
+  };
+
+  const handleVideoClick = async (e: React.MouseEvent<HTMLDivElement>) => {
     if (!targetingMode) return;
     
     // Prevent click if clicking on iframe directly
     if ((e.target as HTMLElement).tagName === 'IFRAME') {
-      console.log('[Chapter] Clicked on iframe - cannot get current time');
-      alert('אנא לחץ על אזור הוידאו (לא על ה-iframe עצמו) או השתמש ב-ReactPlayer');
-      return;
+      console.log('[Chapter] Clicked on iframe - trying to get time via API');
+      // Don't return - try to get time anyway
     }
 
-    let currentTime = 0;
+    const currentTime = await getCurrentTime();
     
-    // Try to get current time from ReactPlayer
-    if (playerRef.current && isReady) {
-      try {
-        // Try to get current time from ReactPlayer
-        if (playerRef.current.getCurrentTime) {
-          currentTime = Math.floor(playerRef.current.getCurrentTime());
-        } else if (playerRef.current.getInternalPlayer) {
-          const internalPlayer = playerRef.current.getInternalPlayer();
-          if (internalPlayer && typeof internalPlayer.getCurrentTime === 'function') {
-            currentTime = Math.floor(internalPlayer.getCurrentTime());
-          } else if (internalPlayer && typeof internalPlayer.currentTime === 'number') {
-            currentTime = Math.floor(internalPlayer.currentTime);
-          }
-        }
-      } catch (err) {
-        console.error('Error getting current time:', err);
+    if (currentTime === 0 && useFallback && !isReady) {
+      // If we can't get time, show a message but still allow manual input
+      const userConfirmed = confirm('לא ניתן לקבל את הזמן המדויק אוטומטית. האם תרצה להזין את הזמן ידנית?');
+      if (!userConfirmed) {
+        setTargetingMode(false);
+        return;
       }
-    } else if (useFallback) {
-      // For iframe, we can't get current time - show error
-      alert('לא ניתן לקבל את הזמן המדויק עם iframe. אנא המתן ל-ReactPlayer להיטען או רענן את הדף.');
-      setTargetingMode(false);
-      return;
     }
 
     setFormData({
@@ -1136,10 +1245,12 @@ export default function ChapterPage() {
                           </div>
                         );
                       }
-                      const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+                      const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
                       return (
                         <div className="w-full h-full absolute inset-0">
                           <iframe
+                            id="youtube-player-iframe"
+                            ref={iframeRef}
                             src={embedUrl}
                             className="w-full h-full"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
