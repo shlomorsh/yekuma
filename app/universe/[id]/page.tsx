@@ -251,14 +251,31 @@ export default function UniverseItemPage() {
 
     const contentSections = parseContent(item.content);
     const typeColor = getTypeColors(item.item_type);
+    const isEioro = item.title === 'אקורדים איורו';
 
     return (
-        <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
-            <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="min-h-screen bg-black text-white" dir="rtl" style={{ fontFamily: 'var(--font-heebo)' }}>
+            <div className="container mx-auto px-4 py-8 max-w-4xl">
                 <div className="mb-8">
                     <Link href="/universe" className="wireframe-border px-3 py-1 mb-4 inline-block" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
                         ← חזרה ליקום
                     </Link>
+                    
+                    {/* Banner Image for Eioro */}
+                    {isEioro && item.image_url && (
+                        <div className="mb-8 wireframe-border overflow-hidden">
+                            <div className="relative w-full" style={{ height: '300px' }}>
+                                <Image
+                                    src={item.image_url}
+                                    alt="דייויד ברוזה - איורו"
+                                    fill
+                                    className="object-contain"
+                                    style={{ objectPosition: 'center' }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                             <div className="flex items-center gap-3 mb-4">
@@ -304,61 +321,103 @@ export default function UniverseItemPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-6">
-                        {isEditing ? (
-                            <div className="wireframe-border p-6 bg-transparent">
-                                <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>עריכת תוכן</h2>
-                                <textarea
-                                    value={editContent}
-                                    onChange={(e) => setEditContent(e.target.value)}
-                                    rows={20}
-                                    className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none resize-none"
+                <div className="space-y-6">
+                    {isEditing ? (
+                        <div className="wireframe-border p-6 bg-transparent">
+                            <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>עריכת תוכן</h2>
+                            <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                rows={20}
+                                className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none resize-none"
+                                style={{ fontFamily: 'var(--font-mono)' }}
+                                placeholder="הכנס תוכן כאן..."
+                            />
+                            <div className="flex gap-3 mt-4">
+                                <button
+                                    onClick={handleSaveEdit}
+                                    className="control-panel-btn"
+                                >
+                                    שמור
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setIsEditing(false);
+                                        setEditContent(item.content || '');
+                                    }}
+                                    className="wireframe-border px-6 py-2 bg-black text-white hover:bg-white/10 transition-colors"
                                     style={{ fontFamily: 'var(--font-mono)' }}
-                                    placeholder="הכנס תוכן כאן..."
-                                />
-                                <div className="flex gap-3 mt-4">
-                                    <button
-                                        onClick={handleSaveEdit}
-                                        className="control-panel-btn"
-                                    >
-                                        שמור
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setIsEditing(false);
-                                            setEditContent(item.content || '');
-                                        }}
-                                        className="wireframe-border px-6 py-2 bg-black text-white hover:bg-white/10 transition-colors"
-                                        style={{ fontFamily: 'var(--font-mono)' }}
-                                    >
-                                        ביטול
-                                    </button>
-                                </div>
+                                >
+                                    ביטול
+                                </button>
                             </div>
-                        ) : (
-                            <div className="space-y-6">
-                                {item.image_url && (
-                                    <div className="wireframe-border p-4 bg-transparent">
-                                        <div className="relative aspect-square w-full max-w-md mx-auto">
-                                            <Image
-                                                src={item.image_url}
-                                                alt={item.title}
-                                                fill
-                                                className="object-cover"
-                                                unoptimized={item.image_url.includes('youtube.com') || item.image_url.includes('img.youtube.com')}
-                                            />
+                        </div>
+                    ) : isEioro ? (
+                        // Special rendering for Eioro Chords
+                        <div className="wireframe-border p-8 bg-transparent mb-8">
+                            <div className="mb-8" style={{ fontFamily: 'var(--font-heebo)', whiteSpace: 'pre', textAlign: 'right', color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.1' }}>
+                                {Object.entries(contentSections).map(([section, content]) => {
+                                    const lines = content.split('\n').filter(line => line.trim());
+                                    return (
+                                        <div key={section}>
+                                            {section !== 'פתיחה' && section !== 'סיום אקורדים' && (
+                                                <div style={{ marginBottom: '1rem', fontWeight: 'bold' }}>{section}:</div>
+                                            )}
+                                            {lines.map((line, i) => {
+                                                // Check if line contains Hebrew characters
+                                                const hasHebrew = /[\u0590-\u05FF]/.test(line);
+                                                // Check if line contains only chords (letters, numbers, #, m, /, spaces)
+                                                const isChordLine = !hasHebrew && /^[A-Ga-g#mb0-9\s\/x]+$/.test(line.trim());
+                                                
+                                                return (
+                                                    <div 
+                                                        key={i} 
+                                                        style={{ 
+                                                            marginBottom: isChordLine ? '0.25rem' : '1rem',
+                                                            textAlign: 'right'
+                                                        }}
+                                                    >
+                                                        {line}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Banner Image for other items */}
+                            {item.image_url && !isEioro && (
+                                <div className="wireframe-border p-4 bg-transparent">
+                                    <div className="relative w-full" style={{ height: item.title === 'לימוד איטלקית' ? '300px' : '400px' }}>
+                                        <Image
+                                            src={item.image_url}
+                                            alt={item.title}
+                                            fill
+                                            className="object-contain"
+                                            style={{ objectPosition: 'center' }}
+                                        />
                                     </div>
-                                )}
+                                </div>
+                            )}
 
-                                {Object.keys(contentSections).length > 0 ? (
-                                    <div className="space-y-6">
-                                        {Object.entries(contentSections).map(([section, content]) => (
-                                            <div key={section} className="wireframe-border p-6 bg-transparent">
-                                                <h2 className="text-2xl font-bold mb-4 glitch-text" style={{ color: typeColor, fontFamily: 'var(--font-heebo)' }}>
-                                                    {section}
-                                                </h2>
+                            {Object.keys(contentSections).length > 0 ? (
+                                <div className="space-y-6">
+                                    {Object.entries(contentSections).map(([section, content]) => (
+                                        <div key={section} className="wireframe-border p-6 bg-transparent">
+                                            <h2 className="text-2xl font-bold mb-4 glitch-text" style={{ color: typeColor, fontFamily: 'var(--font-heebo)' }}>
+                                                {section}
+                                            </h2>
+                                            {item.title === 'לימוד איטלקית' && section === 'מילה' ? (
+                                                <div className="text-right space-y-4" style={{ fontFamily: 'var(--font-heebo)' }}>
+                                                    <div className="wireframe-border p-6 bg-transparent">
+                                                        <div className="text-3xl font-bold mb-2" style={{ color: '#FFFFFF' }}>POKITO</div>
+                                                        <div className="text-2xl" style={{ color: '#FFFFFF', opacity: 0.8 }}>= פוקיטו</div>
+                                                    </div>
+                                                </div>
+                                            ) : (
                                                 <div className="space-y-3" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
                                                     {content.split('\n').map((line, i) => (
                                                         <p key={i} style={{ opacity: 0.9, lineHeight: '1.8' }}>
@@ -366,18 +425,19 @@ export default function UniverseItemPage() {
                                                         </p>
                                                     ))}
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="wireframe-border p-6 bg-transparent">
-                                        <p style={{ color: '#FFFFFF', opacity: 0.7, fontFamily: 'var(--font-heebo)' }}>
-                                            אין תוכן עדיין. {user && 'לחץ על "ערוך" כדי להוסיף תוכן.'}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="wireframe-border p-6 bg-transparent">
+                                    <p style={{ color: '#FFFFFF', opacity: 0.7, fontFamily: 'var(--font-heebo)' }}>
+                                        אין תוכן עדיין. {user && 'לחץ על "ערוך" כדי להוסיף תוכן.'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                         {references.length > 0 && (
                             <div className="wireframe-border p-6 bg-transparent">

@@ -664,53 +664,26 @@ export default function Home() {
               <p>אין פריטים עדיין</p>
             </div>
           ) : (
-            <div className="masonry-grid">
-              {wikiItems.map((item) => {
-                const getTypeColors = () => {
-                  switch (item.item_type) {
-                    case 'program':
-                      return {
-                        accentColor: '#008C9E',
-                      };
-                    case 'advertisement':
-                      return {
-                        accentColor: '#FF6B00',
-                      };
-                    case 'concept':
-                      return {
-                        accentColor: '#D62828',
-                      };
-                  }
-                };
-
-                const getTypeLabel = () => {
-                  switch (item.item_type) {
-                    case 'program':
-                      return 'תכנית';
-                    case 'advertisement':
-                      return 'פרסומת';
-                    case 'concept':
-                      return 'מושג';
-                  }
-                };
-
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+              {wikiItems.map((item, index) => {
                 const getHref = () => {
                   return `/universe/${item.id}`;
                 };
 
-                const colors = getTypeColors();
                 const href = getHref();
-                const randomHeight = Math.floor(Math.random() * 200) + 300; // Varying heights for masonry
 
                 return (
                   <Link
                     key={`${item.item_type}-${item.id}`}
                     href={href}
-                    className="masonry-item wireframe-border overflow-hidden glitch-hover rgb-split"
-                    style={{ background: 'transparent', minHeight: `${randomHeight}px` }}
+                    className="group relative wireframe-border overflow-hidden glitch-hover aspect-square"
+                    style={{
+                      animationDelay: `${index * 50}ms`,
+                      background: 'transparent',
+                    }}
                     data-title={item.title}
                   >
-                    <div className="relative bg-black" style={{ height: '200px' }}>
+                    <div className="relative w-full h-full bg-black">
                       {item.image_url ? (
                         <Image
                           src={item.image_url}
@@ -718,45 +691,16 @@ export default function Home() {
                           fill
                           className="object-cover"
                           loading="lazy"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                         />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <svg className="w-16 h-16" style={{ color: colors.accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {item.item_type === 'program' && (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                            )}
-                            {item.item_type === 'advertisement' && (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.533 9.5-3.5C19.532 4.5 22 8.5 22 13c0 1.76-.743 4.5-5.5 4.5s-7.5-2.5-7.5-2.5z" />
-                            )}
-                            {item.item_type === 'concept' && (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            )}
-                          </svg>
-                        </div>
+                        <div className="absolute inset-0 bg-black" />
                       )}
-                      <div className="absolute top-2 right-2 px-2 py-1 text-xs wireframe-border" style={{ color: colors.accentColor, fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                        {getTypeLabel()}
-                      </div>
                       {item.verified && (
                         <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
                           <span>⭐</span>
-                          <span>מאומת</span>
                         </div>
                       )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-bold mb-1 transition-colors glitch-text" style={{ color: colors.accentColor, fontFamily: 'var(--font-heebo)' }}>
-                        {item.title}
-                      </h3>
-                      {item.description && (
-                        <p className="text-sm line-clamp-3 mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.7 }}>
-                          {item.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 text-xs" style={{ color: colors.accentColor, fontFamily: 'var(--font-mono)' }}>
-                        <span>{item.view_count || 0} צפיות</span>
-                      </div>
                     </div>
                   </Link>
                 );
@@ -773,3 +717,4 @@ export default function Home() {
     </div>
   );
 }
+

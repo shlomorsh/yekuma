@@ -207,103 +207,87 @@ export default function ContractPage() {
           </p>
 
           {/* Chords Section */}
-          <div className="space-y-6 mb-8" style={{ fontFamily: 'var(--font-heebo)' }}>
+          <div className="mb-8" style={{ fontFamily: 'var(--font-heebo)', whiteSpace: 'pre', textAlign: 'right', color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.1' }}>
             {/* פתיחה */}
-            <div className="text-right">
-              <div className="text-sm mb-2" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>פתיחה:</div>
-              <div className="text-lg" style={{ color: '#FFFFFF' }}>Am G F G *2</div>
-            </div>
+            <div style={{ marginBottom: '1rem' }}>פתיחה:</div>
+            <div style={{ marginBottom: '1rem' }}>Bm A G G A x2</div>
 
             {/* Verse 1 */}
-            <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G    F     G                      Am</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>שמיים של עצב עלי והלילה</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>Em              G         Am</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>נוטף לעתו כמו חלב הנר</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>Am                     Dm</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>חרמש וירח כאן מלמעלה</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>                     G      F             G</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>אומר לי לך הלאה אל תשבר</div>
-            </div>
+            <div style={{ marginBottom: '0.25rem' }}>A    G     A                      Bm</div>
+            <div style={{ marginBottom: '1rem' }}>שמיים של עצב עלי והלילה</div>
+            <div style={{ marginBottom: '0.25rem' }}>F#m              A         Bm</div>
+            <div style={{ marginBottom: '1rem' }}>נוטף לעתו כמו חלב הנר</div>
+            <div style={{ marginBottom: '0.25rem' }}>Bm                     Em</div>
+            <div style={{ marginBottom: '1rem' }}>חרמש וירח כאן מלמעלה</div>
+            <div style={{ marginBottom: '0.25rem' }}>                     A      G             A</div>
+            <div style={{ marginBottom: '1rem' }}>אומר לי לך הלאה ואל תשבר</div>
 
             {/* Verse 2 */}
-            <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G    F     G                     Am</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>רכבת הלילה מלאה געגוע</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>Em             G            Am</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ואני ברציף מחכה כמו לנס</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>Am                            Dm</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>בגיל של בדידות אני קרוע</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>          G      F                   G</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>אומר לי לנוע ועוד לחפש</div>
-            </div>
+            <div style={{ marginBottom: '0.25rem' }}>A    G     A                     Bm</div>
+            <div style={{ marginBottom: '1rem' }}>רכבת הלילה מלאה געגוע</div>
+            <div style={{ marginBottom: '0.25rem' }}>F#m             A            Bm</div>
+            <div style={{ marginBottom: '1rem' }}>ואני ברציף מחכה כמו לנס</div>
+            <div style={{ marginBottom: '0.25rem' }}>Bm                            Em</div>
+            <div style={{ marginBottom: '1rem' }}>בגיל של בדידות אני קרוע</div>
+            <div style={{ marginBottom: '0.25rem' }}>          A      G                   A</div>
+            <div style={{ marginBottom: '1rem' }}>אומר לי לנוע ועוד לחפש</div>
 
             {/* Chorus */}
-            <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}> G                  C</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ושוב געגוע פגוע נטוע</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G               F</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>מרעל זיכרונות</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>C</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>גופי בלי גופך שוב</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}> G      F                G</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>גווע שוקע שוקע שוקע</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>      G                Am</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>כאן לבד בין הקירות</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו ובוכה אל הקירות</div>
-              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו וצועק אל הקירות</div>
-            </div>
+            <div style={{ marginBottom: '0.25rem' }}> A                  D</div>
+            <div style={{ marginBottom: '1rem' }}>ושוב געגוע פגוע נטוע</div>
+            <div style={{ marginBottom: '0.25rem' }}>A               G</div>
+            <div style={{ marginBottom: '1rem' }}>מרעל זיכרונות</div>
+            <div style={{ marginBottom: '0.25rem' }}>D</div>
+            <div style={{ marginBottom: '1rem' }}>גופי בלי גופך שוב</div>
+            <div style={{ marginBottom: '0.25rem' }}> A      G                A</div>
+            <div style={{ marginBottom: '1rem' }}>גווע שוקע שוקע שוקע</div>
+            <div style={{ marginBottom: '0.25rem' }}>      A                Bm</div>
+            <div style={{ marginBottom: '1rem' }}>כאן לבד בין הקירות</div>
+            <div style={{ marginBottom: '0.25rem' }}>A           G         A       D</div>
+            <div style={{ marginBottom: '1rem' }}>איורו איורו ובוכה אל הקירות</div>
+            <div style={{ marginBottom: '0.25rem' }}>A           G         A       D</div>
+            <div style={{ marginBottom: '1rem' }}>איורו איורו וצועק אל הקירות</div>
 
             {/* Verse 3 */}
-            <div className="text-right space-y-2">
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>השמש זורחת</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>בעיר הזרה לי</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>לא יודע לאן</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>מוליכים הרחובות</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>רק זה שאליך הולך</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>הוא יקרא לי</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>תראי איך יקרא לי</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>יגיד לי לבוא</div>
-            </div>
+            <div style={{ marginBottom: '1rem' }}>השמש זורחת</div>
+            <div style={{ marginBottom: '1rem' }}>בעיר הזרה לי</div>
+            <div style={{ marginBottom: '1rem' }}>לא יודע לאן</div>
+            <div style={{ marginBottom: '1rem' }}>מוליכים הרחובות</div>
+            <div style={{ marginBottom: '1rem' }}>רק זה שאליך הולך</div>
+            <div style={{ marginBottom: '1rem' }}>הוא יקרא לי</div>
+            <div style={{ marginBottom: '1rem' }}>תראי איך יקרא לי</div>
+            <div style={{ marginBottom: '1rem' }}>יגיד לי לבוא</div>
 
             {/* Verse 4 */}
-            <div className="text-right space-y-2">
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ללכת שנית לאיבוד בעינייך</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>לחבק אותך שוב לחבקך שוב אליי</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>עקבות לא השארת שאליך אחריך</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>השארת את פניך צרובות בעיניי</div>
-            </div>
+            <div style={{ marginBottom: '1rem' }}>ללכת שנית לאיבוד בעינייך</div>
+            <div style={{ marginBottom: '1rem' }}>לחבק אותך שוב לחבקך שוב אליי</div>
+            <div style={{ marginBottom: '1rem' }}>עקבות לא השארת שאליך אחריך</div>
+            <div style={{ marginBottom: '1rem' }}>השארת את פניך צרובות בעיניי</div>
 
             {/* Chorus Repeat */}
-            <div className="text-right space-y-2">
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ושוב געגוע פגוע</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>נגוע מרעל זיכרונות</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>גופי בלי גופך שוב</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>גווע שוקע שוקע שוקע</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>כאן לבד בין הקירות</div>
-              <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
-                <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
-                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו ובוכה אל הקירות</div>
-                <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
-                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו וצועק אל הקירות</div>
-              </div>
-            </div>
+            <div style={{ marginBottom: '1rem' }}>ושוב געגוע פגוע</div>
+            <div style={{ marginBottom: '1rem' }}>נגוע מרעל זיכרונות</div>
+            <div style={{ marginBottom: '1rem' }}>גופי בלי גופך שוב</div>
+            <div style={{ marginBottom: '1rem' }}>גווע שוקע שוקע שוקע</div>
+            <div style={{ marginBottom: '1rem' }}>כאן לבד בין הקירות</div>
+            <div style={{ marginBottom: '0.25rem' }}>A           G         A       D</div>
+            <div style={{ marginBottom: '1rem' }}>איורו איורו ובוכה אל הקירות</div>
+            <div style={{ marginBottom: '0.25rem' }}>A           G         A       D</div>
+            <div style={{ marginBottom: '1rem' }}>איורו איורו וצועק אל הקירות</div>
 
             {/* Ending */}
-            <div className="text-right space-y-2">
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>שוקע שוקע</div>
-              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>כאן לבד בין הקירות</div>
-              <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
-                <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
-                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו ובוכה אל הקירות</div>
-                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>שוקע גווע</div>
-                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ובוכה אל הקירות</div>
-                <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
-                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו וצועק אל הקירות</div>
-              </div>
-            </div>
+            <div style={{ marginBottom: '1rem' }}>שוקע שוקע</div>
+            <div style={{ marginBottom: '1rem' }}>כאן לבד בין הקירות</div>
+            <div style={{ marginBottom: '0.25rem' }}>A           G         A       D</div>
+            <div style={{ marginBottom: '1rem' }}>איורו איורו ובוכה אל הקירות</div>
+            <div style={{ marginBottom: '1rem' }}>שוקע גווע</div>
+            <div style={{ marginBottom: '1rem' }}>ובוכה אל הקירות</div>
+            <div style={{ marginBottom: '0.25rem' }}>A           G         A       D</div>
+            <div style={{ marginBottom: '1rem' }}>איורו איורו וצועק אל הקירות</div>
+
+            {/* סיום */}
+            <div style={{ marginBottom: '1rem' }}>סיום:</div>
+            <div style={{ marginBottom: '1rem' }}>Bm A F#m Bm x2</div>
           </div>
 
           {/* Agreement and Login Form */}
