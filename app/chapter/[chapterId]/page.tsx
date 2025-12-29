@@ -59,6 +59,7 @@ export default function ChapterPage() {
   const [videoDuration, setVideoDuration] = useState(600); // Default 10 minutes
   const [videoError, setVideoError] = useState<string | null>(null);
   const [playerLoaded, setPlayerLoaded] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
   const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
   const [chapter, setChapter] = useState<Chapter | null>(null);
@@ -225,17 +226,23 @@ export default function ChapterPage() {
     fetchChapter();
   }, [chapterId]);
 
-  // Timeout for video loading
+  // Timeout for video loading - switch to fallback if ReactPlayer doesn't load
   useEffect(() => {
-    if (chapter?.video_url && !isReady && !videoError && !playerLoaded) {
+    if (chapter?.video_url && !isReady && !videoError && !playerLoaded && !useFallback) {
       const timeout = setTimeout(() => {
-        console.warn('[Chapter] Video loading timeout - player may not be loading');
-        setVideoError('הוידאו לא נטען. נסה לרענן את הדף או לבדוק את החיבור לאינטרנט.');
-      }, 15000); // 15 seconds timeout
+        console.warn('[Chapter] Video loading timeout - switching to fallback iframe');
+        setUseFallback(true);
+      }, 10000); // 10 seconds timeout before fallback
 
       return () => clearTimeout(timeout);
     }
-  }, [chapter?.video_url, isReady, videoError, playerLoaded]);
+  }, [chapter?.video_url, isReady, videoError, playerLoaded, useFallback]);
+
+  // Extract YouTube video ID for fallback
+  const getYouTubeVideoId = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    return match ? match[1] : null;
+  };
 
   // Handle URL parameters for opening specific reference
   useEffect(() => {
