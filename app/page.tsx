@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
-import ContractModal from "@/app/components/ContractModal";
 
 interface Chapter {
   id: string;
@@ -57,7 +56,6 @@ export default function Home() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [showContractModal, setShowContractModal] = useState(false);
 
   // Track mouse for parallax effects - throttled for performance
   useEffect(() => {
@@ -79,7 +77,7 @@ export default function Home() {
     };
   }, []);
 
-  // Check authentication status and handle auto-login
+  // Check authentication status (no auto-login)
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -90,46 +88,8 @@ export default function Home() {
           return;
         }
 
-        // Get the current session first
+        // Get the current session
         const { data: { session }, error } = await supabase.auth.getSession();
-
-        // If already logged in, skip auto-login
-        if (session?.user) {
-          setUser(session.user);
-          await fetchUserProfile(session.user.id);
-          setAuthLoading(false);
-          return;
-        }
-
-        // Try auto-login if credentials are saved and no session exists
-        const STORAGE_KEY = "yekumot_credentials";
-        const saved = localStorage.getItem(STORAGE_KEY);
-        
-        if (saved) {
-          try {
-            const credentials = JSON.parse(saved);
-            if (credentials.email && credentials.password) {
-              // Try to sign in with saved credentials
-              const { data, error: signInError } = await supabase.auth.signInWithPassword({
-                email: credentials.email,
-                password: credentials.password,
-              });
-
-              if (!signInError && data?.session) {
-                setUser(data.session.user);
-                await fetchUserProfile(data.session.user.id);
-                setAuthLoading(false);
-                return;
-              } else {
-                // Auto-login failed, clear saved credentials
-                localStorage.removeItem(STORAGE_KEY);
-              }
-            }
-          } catch (err) {
-            // Invalid saved credentials, clear them
-            localStorage.removeItem(STORAGE_KEY);
-          }
-        }
 
         if (error) {
           console.error('Error getting session:', error);
@@ -152,18 +112,10 @@ export default function Home() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-
-      // Clear URL hash if present
-      if (typeof window !== 'undefined' && window.location.hash) {
-        window.history.replaceState(null, '', window.location.pathname);
-      }
-
-      if (session?.user) {
-        console.log('Session established for:', session.user.email);
+      if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
         await fetchUserProfile(session.user.id);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setUserProfile(null);
       }
@@ -420,8 +372,6 @@ export default function Home() {
         console.error('Error logging out:', error);
         return;
       }
-      // Clear saved credentials on logout
-      localStorage.removeItem("yekumot_credentials");
       setUser(null);
       setUserProfile(null);
     } catch (err) {
@@ -487,12 +437,12 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <button
-                onClick={() => setShowContractModal(true)}
+              <Link
+                href="/login"
                 className="control-panel-btn"
               >
                 התחבר
-              </button>
+              </Link>
             )}
           </div>
         </div>
@@ -714,10 +664,6 @@ export default function Home() {
         </section>
       </div>
 
-      <ContractModal 
-        isOpen={showContractModal} 
-        onClose={() => setShowContractModal(false)} 
-      />
     </div>
   );
 }

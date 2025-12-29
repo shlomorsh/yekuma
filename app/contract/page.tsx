@@ -5,24 +5,17 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-const STORAGE_KEY = "yekumot_credentials";
-
-interface SavedCredentials {
-  username: string;
-  email: string;
-}
 
 export default function ContractPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  // Contract page is only for sign up
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [user, setUser] = useState<any>(null);
-  const [rememberMe, setRememberMe] = useState(true);
 
   // Helper function to convert username to email
   // Using a valid domain format that Supabase will accept
@@ -60,22 +53,6 @@ export default function ContractPage() {
     };
   }, [router]);
 
-  // Load saved username if exists
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const credentials: SavedCredentials = JSON.parse(saved);
-        if (credentials.username) {
-          setUsername(credentials.username);
-          setRememberMe(true);
-        }
-      } catch (err) {
-        // Ignore parse errors
-      }
-    }
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -99,7 +76,7 @@ export default function ContractPage() {
       return;
     }
 
-    if (isSignUp && password !== confirmPassword) {
+    if (password !== confirmPassword) {
       setMessage("הסיסמאות לא תואמות");
       return;
     }
@@ -110,82 +87,44 @@ export default function ContractPage() {
 
       const email = usernameToEmail(username);
 
-      if (isSignUp) {
-        // Sign up
-        const { data, error } = await supabase.auth.signUp({
-          email: email,
-          password: password,
-        });
+      // Contract page is only for sign up
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
 
-        if (error) {
-          setMessage('שגיאה בהרשמה: ' + error.message);
-          return;
+      if (error) {
+        setMessage('שגיאה בהרשמה: ' + error.message);
+        return;
+      }
+
+      if (data?.user) {
+        // Create profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ 
+            id: data.user.id, 
+            username: username,
+            points: 0 
+          }]);
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
         }
 
-        if (data?.user) {
-          // Create profile
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([{ 
-              id: data.user.id, 
-              username: username,
-              points: 0 
-            }]);
+        // Don't save credentials - no persistence
+        setMessage("ההרשמה הצליחה! מתחבר...");
+        // Wait a moment then sign in
+        setTimeout(async () => {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+          });
 
-          if (profileError) {
-            console.error('Error creating profile:', profileError);
+          if (!signInError) {
+            router.push("/");
           }
-
-          // Save credentials if remember me is checked
-          if (rememberMe) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-              username: username,
-              email: email,
-              password: password,
-            }));
-          }
-
-          setMessage("ההרשמה הצליחה! מתחבר...");
-          // Wait a moment then sign in
-          setTimeout(async () => {
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-              email: email,
-              password: password,
-            });
-
-            if (!signInError) {
-              router.push("/");
-            }
-          }, 1000);
-        }
-      } else {
-        // Sign in
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email,
-          password: password,
-        });
-
-        if (error) {
-          setMessage('שגיאה בהתחברות: ' + error.message);
-          return;
-        }
-
-        if (data?.session) {
-          // Save credentials if remember me is checked
-          if (rememberMe) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-              username: username,
-              email: email,
-              password: password,
-            }));
-          } else {
-            // Clear saved credentials if not remembering
-            localStorage.removeItem(STORAGE_KEY);
-          }
-
-          setMessage("התחברת בהצלחה! מעביר...");
-          router.push("/");
-        }
+        }, 1000);
       }
     } catch (err) {
       console.error('Unexpected error:', err);
@@ -352,45 +291,30 @@ export default function ContractPage() {
                   className="w-full bg-black wireframe-border px-4 py-3 text-white focus:outline-none text-right"
                   style={{ fontFamily: 'var(--font-heebo)' }}
                   required
-                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  autoComplete="new-password"
                   minLength={6}
                 />
               </div>
 
-              {isSignUp && (
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-right" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                    אימות סיסמה
-                  </label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      setMessage("");
-                    }}
-                    placeholder="הכנס סיסמה שוב"
-                    className="w-full bg-black wireframe-border px-4 py-3 text-white focus:outline-none text-right"
-                    style={{ fontFamily: 'var(--font-heebo)' }}
-                    required={isSignUp}
-                    minLength={6}
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center gap-3 text-right">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 wireframe-border"
-                  style={{ accentColor: '#008C9E' }}
-                />
-                <label htmlFor="remember" className="text-sm" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                  זכור אותי (התחבר אוטומטית בפעם הבאה)
+              <div>
+                <label className="block text-sm font-medium mb-2 text-right" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+                  אימות סיסמה
                 </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setMessage("");
+                  }}
+                  placeholder="הכנס סיסמה שוב"
+                  className="w-full bg-black wireframe-border px-4 py-3 text-white focus:outline-none text-right"
+                  style={{ fontFamily: 'var(--font-heebo)' }}
+                  required
+                  minLength={6}
+                />
               </div>
+
 
               {message && (
                 <p className={`text-sm text-center text-right ${message.includes("הצלח") || message.includes("מתחבר") ? "text-green-400" : "text-red-400"}`} style={{ fontFamily: 'var(--font-mono)' }}>
@@ -403,22 +327,14 @@ export default function ContractPage() {
                 disabled={loading || !agreed}
                 className="w-full control-panel-btn disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (isSignUp ? "נרשם..." : "מתחבר...") : (isSignUp ? "הרשמה" : "התחבר")}
+                {loading ? "נרשם..." : "הרשמה"}
               </button>
             </form>
 
             <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setMessage("");
-                }}
-                className="text-sm transition-colors hover:underline"
-                style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}
-              >
-                {isSignUp ? "יש לך כבר חשבון? התחבר" : "אין לך חשבון? הירשם"}
-              </button>
+              <p className="text-sm" style={{ color: '#888', fontFamily: 'var(--font-mono)' }}>
+                יש לך כבר חשבון? <Link href="/login" className="underline" style={{ color: '#008C9E' }}>התחבר כאן</Link>
+              </p>
             </div>
           </div>
         </div>

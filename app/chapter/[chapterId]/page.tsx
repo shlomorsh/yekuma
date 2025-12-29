@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import ContractModal from "@/app/components/ContractModal";
 import ImageUploader from "@/app/components/ImageUploader";
 
 interface Reference {
@@ -64,7 +63,6 @@ export default function ChapterPage() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [topContributors, setTopContributors] = useState<any[]>([]);
   const [authLoading, setAuthLoading] = useState(true);
-  const [showContractModal, setShowContractModal] = useState(false);
   const [showLinkedRefsModal, setShowLinkedRefsModal] = useState(false);
   const [availableReferences, setAvailableReferences] = useState<Reference[]>([]);
   const [loadingLinkedRefs, setLoadingLinkedRefs] = useState(false);
@@ -539,8 +537,7 @@ export default function ChapterPage() {
 
   const handleAddReferenceClick = () => {
     if (!user) {
-      alert("אתה צריך להתחבר כדי להוסיף רפרנס. אנא התחבר תחילה.");
-      setShowContractModal(true);
+      router.push("/login");
       return;
     }
 
@@ -1056,12 +1053,12 @@ export default function ChapterPage() {
                   </div>
                 </div>
               ) : (
-                <button
-                  onClick={() => setShowContractModal(true)}
+                <Link
+                  href="/login"
                   className="control-panel-btn"
                 >
                   התחבר
-                </button>
+                </Link>
               )
             )}
           </div>
@@ -1616,11 +1613,6 @@ export default function ChapterPage() {
           </div>
         </div>
 
-        {/* Contract Modal */}
-        <ContractModal 
-          isOpen={showContractModal} 
-          onClose={() => setShowContractModal(false)} 
-        />
 
         {/* Add Reference Guide Modal */}
         {showAddReferenceGuide && (
