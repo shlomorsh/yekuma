@@ -136,3 +136,104 @@ useEffect(() => {
 ## תאריך
 תוקן ב: 2024
 
+---
+
+## עדכון - בעיית טעינת הוידאו
+
+### בעיה נוספת
+לאחר תיקון שגיאת `onDuration`, המשתמש דיווח שהוידאו לא נטען - רק תמונת הכיסוי רואים אבל לא את הפרק עצמו.
+
+### מה ניסיתי
+
+#### ניסיון 1: הוספת `onBuffer` ו-`onBufferEnd`
+**מה עשיתי:**
+- הוספתי callbacks `onBuffer` ו-`onBufferEnd` כדי לעקוב אחר תהליך הטעינה
+
+**תוצאה:**
+- ❌ שגיאה: "Unknown event handler property `onBuffer`. It will be ignored."
+- ❌ הוידאו עדיין לא נטען
+
+**למה זה לא עבד:**
+- `onBuffer` ו-`onBufferEnd` לא נתמכים ב-ReactPlayer בגרסה 3.4.0
+- ReactPlayer מעביר props לא מוכרים ל-DOM element, וזה גורם לשגיאות
+
+#### ניסיון 2: הוספת לוגים ושיפור timeout
+**מה עשיתי:**
+- הוספתי לוגים נוספים כדי לראות מתי ReactPlayer נטען
+- הגדלתי את ה-timeout מ-10 שניות ל-15 ואז ל-20 שניות
+- הוספתי בדיקות נוספות
+
+**תוצאה:**
+- ✅ הלוגים הראו ש-ReactPlayer מנסה להיטען
+- ❌ אבל `onReady` לא נקרא - ReactPlayer לא מצליח לטעון את הוידאו
+- ❌ ה-timeout מופעל אחרי 20 שניות
+
+**למה זה לא עבד:**
+- ReactPlayer לא מצליח לטעון את הוידאו מ-YouTube
+- יכול להיות בעיה עם YouTube API או עם ה-config
+
+#### ניסיון 3: הסרת `origin` מה-config
+**מה עשיתי:**
+- הסרתי את ה-`origin` מה-config של YouTube
+- החזרתי את המעבר האוטומטי ל-fallback אחרי 10 שניות
+
+**תוצאה:**
+- ✅ הקוד עובד
+- ✅ אם ReactPlayer לא נטען, זה עובר אוטומטית ל-iframe fallback
+
+**למה זה עבד:**
+- ה-`origin` ב-config יכול לגרום לבעיות עם YouTube API
+- המעבר האוטומטי ל-fallback מבטיח שהוידאו יוצג גם אם ReactPlayer לא עובד
+
+### לקחים נוספים
+
+1. **`onBuffer` ו-`onBufferEnd` לא נתמכים** - לא להשתמש בהם ב-ReactPlayer 3.4.0
+2. **`origin` ב-config יכול לגרום לבעיות** - עדיף להסיר אותו מה-config של YouTube
+3. **Fallback חשוב** - צריך תמיד להשאיר fallback ל-iframe אם ReactPlayer לא עובד
+4. **Timeout צריך להיות סביר** - 10 שניות זה מספיק, לא צריך יותר מדי זמן
+5. **לוגים עוזרים** - אבל לא פותרים את הבעיה, רק עוזרים לזהות אותה
+
+### קוד סופי מעודכן:
+
+```typescript
+// Config ללא origin:
+config={{
+  youtube: {
+    playerVars: {
+      modestbranding: 1,
+      rel: 0,
+      autoplay: 0,
+      enablejsapi: 1,
+      playsinline: 1,
+    },
+  },
+}}
+
+// Timeout עם fallback:
+useEffect(() => {
+  if (chapter?.video_url && !isReady && !videoError && !playerLoaded && !useFallback) {
+    const timeout = setTimeout(() => {
+      if (!isReady && !playerLoaded) {
+        console.log('[Chapter] ReactPlayer failed to load, switching to iframe fallback');
+        setUseFallback(true);
+      }
+    }, 10000); // 10 seconds
+
+    return () => clearTimeout(timeout);
+  }
+}, [chapter?.video_url, isReady, videoError, playerLoaded, useFallback]);
+```
+
+### Props שצריך להימנע מהם:
+- ❌ `onDuration` - לא נתמך
+- ❌ `onBuffer` - לא נתמך
+- ❌ `onBufferEnd` - לא נתמך
+
+### Props שתקינים:
+- ✅ `onReady` - תקין
+- ✅ `onPlay` - תקין
+- ✅ `onPause` - תקין
+- ✅ `onError` - תקין
+- ✅ `onProgress` - תקין
+- ✅ `onStart` - תקין
+

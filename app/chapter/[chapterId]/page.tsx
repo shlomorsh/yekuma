@@ -245,9 +245,12 @@ export default function ChapterPage() {
           useFallback,
           playerRefExists: !!playerRef.current
         });
-        // Don't switch to fallback automatically - let user see the ReactPlayer loading state
-        // setUseFallback(true);
-      }, 20000); // 20 seconds timeout before fallback (increased from 15)
+        // Switch to fallback if ReactPlayer doesn't load
+        if (!isReady && !playerLoaded) {
+          console.log('[Chapter] ReactPlayer failed to load, switching to iframe fallback');
+          setUseFallback(true);
+        }
+      }, 10000); // 10 seconds timeout before fallback
 
       return () => clearTimeout(timeout);
     }
@@ -1164,7 +1167,6 @@ export default function ChapterPage() {
                               rel: 0,
                               autoplay: 0,
                               enablejsapi: 1,
-                              origin: typeof window !== 'undefined' ? window.location.origin : '',
                               playsinline: 1,
                             },
                           },
