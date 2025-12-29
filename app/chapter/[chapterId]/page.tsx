@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ContractModal from "@/app/components/ContractModal";
+import ImageUploader from "@/app/components/ImageUploader";
 
 const ReactPlayer = dynamic(
   () => {
@@ -97,6 +98,7 @@ export default function ChapterPage() {
   const [availableReferences, setAvailableReferences] = useState<Reference[]>([]);
   const [loadingLinkedRefs, setLoadingLinkedRefs] = useState(false);
   const [targetingMode, setTargetingMode] = useState(false);
+  const [showAddReferenceGuide, setShowAddReferenceGuide] = useState(false);
   const [crosshairPosition, setCrosshairPosition] = useState({ x: 0, y: 0 });
   const [isEditingReference, setIsEditingReference] = useState(false);
   const [editReferenceData, setEditReferenceData] = useState({
@@ -563,23 +565,39 @@ export default function ChapterPage() {
       return;
     }
 
-    // Enable targeting mode
+    // Show guide modal first
+    setShowAddReferenceGuide(true);
+  };
+
+  const handleStartTargeting = () => {
+    // Check if we can get current time (ReactPlayer must be ready)
+    if (useFallback && !isReady) {
+      alert("אנא המתן ל-ReactPlayer להיטען כדי לקבל את הזמן המדויק. אם זה לא עובד, נסה לרענן את הדף.");
+      setShowAddReferenceGuide(false);
+      return;
+    }
+
+    // Close guide and enable targeting mode
+    setShowAddReferenceGuide(false);
+    // "מצב כיוון" - מצב שבו המשתמש יכול ללחוץ על הוידאו כדי לבחור את הזמן המדויק להוספת רפרנס
     setTargetingMode(true);
     setPlaying(false);
   };
 
   const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!targetingMode) return;
+    
+    // Prevent click if clicking on iframe directly
+    if ((e.target as HTMLElement).tagName === 'IFRAME') {
+      console.log('[Chapter] Clicked on iframe - cannot get current time');
+      alert('אנא לחץ על אזור הוידאו (לא על ה-iframe עצמו) או השתמש ב-ReactPlayer');
+      return;
+    }
 
     let currentTime = 0;
     
-    // If using fallback iframe, we can't get current time easily
-    // User will need to manually set the timestamp in the form
-    if (useFallback) {
-      // For iframe, we'll use 0 as default - user can edit it in the form
-      console.log('[Chapter] Using fallback iframe - timestamp will be 0, user can edit it');
-      currentTime = 0;
-    } else if (playerRef.current && isReady) {
+    // Try to get current time from ReactPlayer
+    if (playerRef.current && isReady) {
       try {
         // Try to get current time from ReactPlayer
         if (playerRef.current.getCurrentTime) {
@@ -595,6 +613,11 @@ export default function ChapterPage() {
       } catch (err) {
         console.error('Error getting current time:', err);
       }
+    } else if (useFallback) {
+      // For iframe, we can't get current time - show error
+      alert('לא ניתן לקבל את הזמן המדויק עם iframe. אנא המתן ל-ReactPlayer להיטען או רענן את הדף.');
+      setTargetingMode(false);
+      return;
     }
 
     setFormData({
@@ -1122,7 +1145,15 @@ export default function ChapterPage() {
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             title={chapter.title}
+                            style={{ pointerEvents: targetingMode ? 'none' : 'auto' }}
                           />
+                          {/* Overlay for targeting mode to capture clicks */}
+                          {targetingMode && (
+                            <div 
+                              className="absolute inset-0 z-10"
+                              style={{ pointerEvents: 'auto' }}
+                            />
+                          )}
                         </div>
                       );
                     })()
@@ -1302,25 +1333,14 @@ export default function ChapterPage() {
                 <form onSubmit={handleSaveReference} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      זמן (שניות) {useFallback && <span className="text-yellow-400 text-xs">(ערוך ידנית אם צריך)</span>}
+                      זמן (נלכד מהוידאו)
                     </label>
-                    {useFallback ? (
-                      <input
-                        type="number"
-                        value={formData.timestamp}
-                        onChange={(e) => setFormData({ ...formData, timestamp: parseInt(e.target.value) || 0 })}
-                        min="0"
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="הכנס זמן בשניות"
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={formatTime(formData.timestamp)}
-                        readOnly
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-400 cursor-not-allowed"
-                      />
-                    )}
+                    <input
+                      type="text"
+                      value={formatTime(formData.timestamp)}
+                      readOnly
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-400 cursor-not-allowed"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-2">
@@ -1349,14 +1369,12 @@ export default function ChapterPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      כתובת תמונה (אופציונלי)
+                      תמונה (אופציונלי)
                     </label>
-                    <input
-                      type="url"
+                    <ImageUploader
                       value={formData.imageUrl}
-                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="https://example.com/image.jpg"
+                      onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                      aspectRatio={4/3}
                     />
                   </div>
                   <div className="flex gap-3 pt-2">
@@ -1712,6 +1730,74 @@ export default function ChapterPage() {
           isOpen={showContractModal} 
           onClose={() => setShowContractModal(false)} 
         />
+
+        {/* Add Reference Guide Modal */}
+        {showAddReferenceGuide && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-black wireframe-border p-6 shadow-2xl w-full max-w-2xl mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
+                  איך להוסיף רפרנס?
+                </h2>
+                <button
+                  onClick={() => setShowAddReferenceGuide(false)}
+                  className="text-zinc-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-4 text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-orange-400" style={{ fontFamily: 'var(--font-mono)' }}>
+                    שלב 1: בחר זמן בווידאו
+                  </h3>
+                  <p className="text-zinc-300">
+                    לחץ על "התחל" למטה, ואז לחץ על הוידאו במקום שבו אתה רוצה להוסיף את הרפרנס.
+                    הזמן המדויק יילכד אוטומטית.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-orange-400" style={{ fontFamily: 'var(--font-mono)' }}>
+                    שלב 2: מלא פרטים
+                  </h3>
+                  <p className="text-zinc-300">
+                    לאחר הלחיצה על הוידאו, ייפתח טופס שבו תוכל למלא:
+                  </p>
+                  <ul className="list-disc list-inside text-zinc-300 space-y-1 mr-4">
+                    <li>כותרת (חובה)</li>
+                    <li>תיאור (אופציונלי)</li>
+                    <li>תמונה (אופציונלי)</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-orange-400" style={{ fontFamily: 'var(--font-mono)' }}>
+                    שלב 3: שמור
+                  </h3>
+                  <p className="text-zinc-300">
+                    לחץ על "שמור רפרנס" כדי לשמור את הרפרנס החדש.
+                  </p>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={handleStartTargeting}
+                    className="flex-1 control-panel-btn"
+                  >
+                    התחל
+                  </button>
+                  <button
+                    onClick={() => setShowAddReferenceGuide(false)}
+                    className="flex-1 wireframe-border px-4 py-2 bg-black hover:bg-white/10 transition-colors text-white"
+                    style={{ fontFamily: 'var(--font-mono)' }}
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Linked References Modal */}
         {showLinkedRefsModal && (
