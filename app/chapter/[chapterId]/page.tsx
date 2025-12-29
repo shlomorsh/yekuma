@@ -8,7 +8,20 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ContractModal from "@/app/components/ContractModal";
 
-const ReactPlayer = dynamic(() => import("react-player"), { ssr: false }) as React.ComponentType<any>;
+const ReactPlayer = dynamic(
+  () => import("react-player"),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
+          <p className="text-white text-sm">טוען נגן וידאו...</p>
+        </div>
+      </div>
+    )
+  }
+) as React.ComponentType<any>;
 
 interface Reference {
   id: string;
@@ -182,6 +195,11 @@ export default function ChapterPage() {
 
           if (data) {
             console.log('[Chapter] Setting chapter:', data.title);
+            console.log('[Chapter] Video URL:', data.video_url);
+            // Validate video URL
+            if (data.video_url && !data.video_url.includes('youtube.com') && !data.video_url.includes('youtu.be')) {
+              console.warn('[Chapter] Video URL does not appear to be a YouTube URL:', data.video_url);
+            }
             setChapter(data);
             setLoading(false);
           } else {
@@ -980,7 +998,8 @@ export default function ChapterPage() {
             >
               {chapter.video_url ? (
                 <>
-                  <ReactPlayer
+                  {typeof window !== 'undefined' ? (
+                    <ReactPlayer
                     ref={playerRef}
                     url={chapter.video_url}
                     width="100%"
@@ -993,7 +1012,13 @@ export default function ChapterPage() {
                     onPause={() => setPlaying(false)}
                     onError={(error: any) => {
                       console.error('[Chapter] Video player error:', error);
-                      setVideoError('שגיאה בטעינת הוידאו. נסה לרענן את הדף.');
+                      console.error('[Chapter] Video URL:', chapter.video_url);
+                      console.error('[Chapter] Error details:', {
+                        message: error?.message,
+                        type: error?.type,
+                        data: error?.data
+                      });
+                      setVideoError('שגיאה בטעינת הוידאו. נסה לרענן את הדף או לבדוק את הקישור.');
                     }}
                     onReady={() => {
                       console.log('[Chapter] Video player ready');
@@ -1036,10 +1061,18 @@ export default function ChapterPage() {
                           rel: 0,
                           autoplay: 0,
                           enablejsapi: 1,
+                          origin: typeof window !== 'undefined' ? window.location.origin : '',
                         },
                       },
                     }}
                   />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-black">
+                      <div className="text-center">
+                        <p className="text-white mb-2">טוען נגן וידאו...</p>
+                      </div>
+                    </div>
+                  )}
                   {videoError && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/80">
                       <div className="text-center p-4">
