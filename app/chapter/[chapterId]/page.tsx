@@ -58,7 +58,8 @@ export default function ChapterPage() {
   // Authentication state
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginMessage, setLoginMessage] = useState("");
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -816,11 +817,25 @@ export default function ChapterPage() {
     window.open(url, '_blank');
   };
 
+  // Helper function to convert username to email (same as in contract/login pages)
+  const usernameToEmail = (username: string) => {
+    let cleanUsername = username.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
+    if (!cleanUsername) {
+      cleanUsername = 'user' + Math.random().toString(36).substring(2, 9);
+    }
+    return `${cleanUsername}@yekumot.app`;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!loginEmail.trim()) {
-      setLoginMessage("אנא הכנס כתובת אימייל");
+    if (!loginUsername.trim()) {
+      setLoginMessage("אנא הכנס שם משתמש");
+      return;
+    }
+
+    if (!loginPassword.trim()) {
+      setLoginMessage("אנא הכנס סיסמה");
       return;
     }
 
@@ -828,23 +843,20 @@ export default function ChapterPage() {
       setLoginLoading(true);
       setLoginMessage("");
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email: loginEmail,
-        options: {
-          emailRedirectTo: 'https://yekuma.vercel.app/',
-          shouldCreateUser: true,
-        },
+      const email = usernameToEmail(loginUsername);
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: loginPassword,
       });
 
       if (error) {
-        setLoginMessage('שגיאה בשליחת קישור: ' + error.message);
+        setLoginMessage('שגיאה בהתחברות: ' + error.message);
         return;
       }
 
-      setLoginMessage("בדוק את האימייל שלך לקבלת קישור ההתחברות!");
-      setTimeout(() => {
-        setShowLoginModal(false);
-      }, 2000);
+      // Success - will close modal via useEffect
+      setShowLoginModal(false);
     } catch (err) {
       console.error('Unexpected error:', err);
       setLoginMessage('שגיאה בלתי צפויה');
@@ -1485,22 +1497,40 @@ export default function ChapterPage() {
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-300 mb-2">
-                    כתובת אימייל
+                    שם משתמש
                   </label>
                   <input
-                    type="email"
-                    value={loginEmail}
+                    type="text"
+                    value={loginUsername}
                     onChange={(e) => {
-                      setLoginEmail(e.target.value);
+                      setLoginUsername(e.target.value);
                       setLoginMessage("");
                     }}
-                    placeholder="הכנס את כתובת האימייל שלך"
+                    placeholder="הכנס את שם המשתמש שלך"
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
+                    autoComplete="username"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">
+                    סיסמה
+                  </label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => {
+                      setLoginPassword(e.target.value);
+                      setLoginMessage("");
+                    }}
+                    placeholder="הכנס את הסיסמה שלך"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    autoComplete="current-password"
                   />
                 </div>
                 {loginMessage && (
-                  <p className={`text-sm ${loginMessage.includes("בדוק") ? "text-green-400" : "text-red-400"}`}>
+                  <p className={`text-sm ${loginMessage.includes("הצלח") ? "text-green-400" : "text-red-400"}`}>
                     {loginMessage}
                   </p>
                 )}
@@ -1510,7 +1540,7 @@ export default function ChapterPage() {
                     disabled={loginLoading}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg transition-colors duration-200"
                   >
-                    {loginLoading ? "שולח..." : "שלח קישור התחברות"}
+                    {loginLoading ? "מתחבר..." : "התחבר"}
                   </button>
                   <button
                     type="button"

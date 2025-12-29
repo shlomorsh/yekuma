@@ -7,10 +7,23 @@ import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [user, setUser] = useState<any>(null);
+
+  // Helper function to convert username to email (same as in contract page)
+  const usernameToEmail = (username: string) => {
+    // Clean username: remove spaces, special chars, and convert to lowercase
+    let cleanUsername = username.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
+    // Ensure username is not empty after cleaning
+    if (!cleanUsername) {
+      cleanUsername = 'user' + Math.random().toString(36).substring(2, 9);
+    }
+    // Use a valid domain format
+    return `${cleanUsername}@yekumot.app`;
+  };
 
   useEffect(() => {
     const checkSession = async () => {
@@ -37,8 +50,13 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim()) {
-      setMessage("אנא הכנס כתובת אימייל");
+    if (!username.trim()) {
+      setMessage("אנא הכנס שם משתמש");
+      return;
+    }
+
+    if (!password.trim()) {
+      setMessage("אנא הכנס סיסמה");
       return;
     }
 
@@ -46,24 +64,20 @@ export default function LoginPage() {
       setLoading(true);
       setMessage("");
 
-      // Always use production URL for magic link redirect
-      // This ensures the link works even if sent from localhost
-      const redirectUrl = 'https://yekuma.vercel.app/';
+      const email = usernameToEmail(username);
 
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email,
-        options: {
-          emailRedirectTo: redirectUrl,
-          shouldCreateUser: true,
-        },
+        password: password,
       });
 
       if (error) {
-        setMessage('שגיאה בשליחת קישור: ' + error.message);
+        setMessage('שגיאה בהתחברות: ' + error.message);
         return;
       }
 
-      setMessage("בדוק את האימייל שלך לקבלת קישור ההתחברות!");
+      // Success - will redirect via useEffect
+      router.push("/");
     } catch (err) {
       console.error('Unexpected error:', err);
       setMessage('שגיאה בלתי צפויה');
@@ -95,24 +109,44 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                כתובת אימייל
+                שם משתמש
               </label>
               <input
-                type="email"
-                value={email}
+                type="text"
+                value={username}
                 onChange={(e) => {
-                  setEmail(e.target.value);
+                  setUsername(e.target.value);
                   setMessage("");
                 }}
-                placeholder="הכנס את כתובת האימייל שלך"
+                placeholder="הכנס את שם המשתמש שלך"
                 className="w-full bg-black wireframe-border px-4 py-3 text-white focus:outline-none"
                 style={{ fontFamily: 'var(--font-heebo)' }}
                 required
+                autoComplete="username"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+                סיסמה
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setMessage("");
+                }}
+                placeholder="הכנס את הסיסמה שלך"
+                className="w-full bg-black wireframe-border px-4 py-3 text-white focus:outline-none"
+                style={{ fontFamily: 'var(--font-heebo)' }}
+                required
+                autoComplete="current-password"
               />
             </div>
 
             {message && (
-              <p className={`text-sm text-center ${message.includes("בדוק") ? "text-green-400" : "text-red-400"}`} style={{ fontFamily: 'var(--font-mono)' }}>
+              <p className={`text-sm text-center ${message.includes("הצלח") ? "text-green-400" : "text-red-400"}`} style={{ fontFamily: 'var(--font-mono)' }}>
                 {message}
               </p>
             )}
@@ -122,13 +156,15 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full control-panel-btn disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "שולח..." : "שלח קישור התחברות"}
+              {loading ? "מתחבר..." : "התחבר"}
             </button>
           </form>
 
           <div className="mt-6 text-center text-sm" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>
-            <p>נשלח לך קישור התחברות באימייל</p>
-            <p className="mt-2">לחץ על הקישור כדי להתחבר</p>
+            <p>אין לך חשבון?</p>
+            <Link href="/contract" className="text-blue-400 hover:text-blue-300 underline">
+              הרשמה
+            </Link>
           </div>
         </div>
       </div>
