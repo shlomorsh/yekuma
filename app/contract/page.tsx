@@ -28,7 +28,11 @@ export default function ContractPage() {
   // Using a valid domain format that Supabase will accept
   const usernameToEmail = (username: string) => {
     // Clean username: remove spaces, special chars, and convert to lowercase
-    const cleanUsername = username.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
+    let cleanUsername = username.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
+    // Ensure username is not empty after cleaning
+    if (!cleanUsername) {
+      cleanUsername = 'user' + Math.random().toString(36).substring(2, 9);
+    }
     // Use a valid domain format
     return `${cleanUsername}@yekumot.app`;
   };
