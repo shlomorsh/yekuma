@@ -1018,7 +1018,18 @@ export default function ChapterPage() {
             >
               {chapter.video_url ? (
                 <>
-                  {typeof window !== 'undefined' ? (
+                  {useFallback ? (
+                    // Fallback: Direct YouTube iframe
+                    <div className="w-full h-full">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${getYouTubeVideoId(chapter.video_url)}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                        className="w-full h-full aspect-video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={chapter.title}
+                      />
+                    </div>
+                  ) : typeof window !== 'undefined' ? (
                     <ReactPlayer
                     ref={playerRef}
                     url={chapter.video_url}
