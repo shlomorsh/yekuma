@@ -229,10 +229,25 @@ export default function ChapterPage() {
   // Timeout for video loading - switch to fallback if ReactPlayer doesn't load
   useEffect(() => {
     if (chapter?.video_url && !isReady && !videoError && !playerLoaded && !useFallback) {
+      console.log('[Chapter] Setting timeout for video loading...', {
+        hasVideoUrl: !!chapter?.video_url,
+        isReady,
+        videoError,
+        playerLoaded,
+        useFallback,
+        playerRefExists: !!playerRef.current
+      });
       const timeout = setTimeout(() => {
-        console.warn('[Chapter] Video loading timeout - switching to fallback iframe');
-        setUseFallback(true);
-      }, 10000); // 10 seconds timeout before fallback
+        console.warn('[Chapter] Video loading timeout - switching to fallback iframe', {
+          isReady,
+          videoError,
+          playerLoaded,
+          useFallback,
+          playerRefExists: !!playerRef.current
+        });
+        // Don't switch to fallback automatically - let user see the ReactPlayer loading state
+        // setUseFallback(true);
+      }, 20000); // 20 seconds timeout before fallback (increased from 15)
 
       return () => clearTimeout(timeout);
     }
@@ -1041,7 +1056,7 @@ export default function ChapterPage() {
 
             {/* Video Player */}
             <div 
-              className="bg-black wireframe-border overflow-hidden relative"
+              className="bg-black wireframe-border overflow-hidden relative aspect-video"
               style={{ cursor: targetingMode ? 'crosshair' : 'default' }}
               onClick={handleVideoClick}
               onMouseMove={handleVideoMouseMove}
@@ -1072,86 +1087,90 @@ export default function ChapterPage() {
                       );
                     })()
                   ) : typeof window !== 'undefined' ? (
-                    <ReactPlayer
-                      ref={playerRef}
-                      url={chapter.video_url}
-                      width="100%"
-                      height="100%"
-                      playing={playing}
-                      light={false}
-                      onStart={() => {
-                        console.log('[Chapter] Video started');
-                        setPlayerLoaded(true);
-                      }}
-                      onPlay={() => {
-                        console.log('[Chapter] Video playing');
-                        setPlaying(true);
-                        setVideoError(null);
-                        setPlayerLoaded(true);
-                      }}
-                      onPause={() => {
-                        console.log('[Chapter] Video paused');
-                        setPlaying(false);
-                      }}
-                      onError={(error: any) => {
-                        console.error('[Chapter] Video player error:', error);
-                        console.error('[Chapter] Video URL:', chapter.video_url);
-                        console.error('[Chapter] Error details:', {
-                          message: error?.message,
-                          type: error?.type,
-                          data: error?.data
-                        });
-                        setVideoError('שגיאה בטעינת הוידאו. נסה לרענן את הדף או לבדוק את הקישור.');
-                      }}
-                      onReady={() => {
-                        console.log('[Chapter] Video player ready');
-                        setIsReady(true);
-                        setPlayerLoaded(true);
-                        setVideoError(null);
-                        // Try to get video duration
-                        try {
-                          if (playerRef.current && playerRef.current.getDuration) {
-                            const duration = playerRef.current.getDuration();
-                            if (duration && duration > 0) {
-                              setVideoDuration(duration);
-                              console.log('[Chapter] Video duration:', duration);
-                            }
-                          } else if (playerRef.current && playerRef.current.getInternalPlayer) {
-                            const internalPlayer = playerRef.current.getInternalPlayer();
-                            if (internalPlayer && typeof internalPlayer.getDuration === 'function') {
-                              const duration = internalPlayer.getDuration();
+                    <>
+                      {console.log('[Chapter] About to render ReactPlayer, URL:', chapter.video_url)}
+                      <ReactPlayer
+                        ref={playerRef}
+                        url={chapter.video_url}
+                        width="100%"
+                        height="100%"
+                        playing={playing}
+                        light={false}
+                        onStart={() => {
+                          console.log('[Chapter] Video started');
+                          setPlayerLoaded(true);
+                        }}
+                        onPlay={() => {
+                          console.log('[Chapter] Video playing');
+                          setPlaying(true);
+                          setVideoError(null);
+                          setPlayerLoaded(true);
+                        }}
+                        onPause={() => {
+                          console.log('[Chapter] Video paused');
+                          setPlaying(false);
+                        }}
+                        onError={(error: any) => {
+                          console.error('[Chapter] Video player error:', error);
+                          console.error('[Chapter] Video URL:', chapter.video_url);
+                          console.error('[Chapter] Error details:', {
+                            message: error?.message,
+                            type: error?.type,
+                            data: error?.data
+                          });
+                          setVideoError('שגיאה בטעינת הוידאו. נסה לרענן את הדף או לבדוק את הקישור.');
+                          setUseFallback(true); // Switch to fallback on error
+                        }}
+                        onReady={() => {
+                          console.log('[Chapter] Video player ready - SUCCESS!');
+                          setIsReady(true);
+                          setPlayerLoaded(true);
+                          setVideoError(null);
+                          // Try to get video duration
+                          try {
+                            if (playerRef.current && playerRef.current.getDuration) {
+                              const duration = playerRef.current.getDuration();
                               if (duration && duration > 0) {
                                 setVideoDuration(duration);
                                 console.log('[Chapter] Video duration:', duration);
                               }
+                            } else if (playerRef.current && playerRef.current.getInternalPlayer) {
+                              const internalPlayer = playerRef.current.getInternalPlayer();
+                              if (internalPlayer && typeof internalPlayer.getDuration === 'function') {
+                                const duration = internalPlayer.getDuration();
+                                if (duration && duration > 0) {
+                                  setVideoDuration(duration);
+                                  console.log('[Chapter] Video duration:', duration);
+                                }
+                              }
                             }
+                          } catch (err) {
+                            console.warn('Could not get video duration:', err);
                           }
-                        } catch (err) {
-                          console.warn('Could not get video duration:', err);
-                        }
-                      }}
-                      onProgress={(state: any) => {
-                        // This fires frequently, so we know the player is working
-                        if (!playerLoaded) {
-                          console.log('[Chapter] Video player progress - player is working');
-                          setPlayerLoaded(true);
-                        }
-                      }}
-                      controls={!targetingMode}
-                      className="aspect-video"
-                      config={{
-                        youtube: {
-                          playerVars: {
-                            modestbranding: 1,
-                            rel: 0,
-                            autoplay: 0,
-                            enablejsapi: 1,
-                            origin: typeof window !== 'undefined' ? window.location.origin : '',
-                            playsinline: 1,
+                        }}
+                        onProgress={(state: any) => {
+                          // This fires frequently, so we know the player is working
+                          if (!playerLoaded) {
+                            console.log('[Chapter] Video player progress - player is working', state);
+                            setPlayerLoaded(true);
+                          }
+                        }}
+                        controls={!targetingMode}
+                        className="aspect-video"
+                        config={{
+                          youtube: {
+                            playerVars: {
+                              modestbranding: 1,
+                              rel: 0,
+                              autoplay: 0,
+                              enablejsapi: 1,
+                              origin: typeof window !== 'undefined' ? window.location.origin : '',
+                              playsinline: 1,
+                            },
                           },
-                        },
-                      }}
-                    />
+                        }}
+                      />
+                    </>
                   ) : null}
                   {videoError && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/80">
