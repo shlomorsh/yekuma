@@ -2,40 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ContractModal from "@/app/components/ContractModal";
 import ImageUploader from "@/app/components/ImageUploader";
-
-const ReactPlayer = dynamic(
-  () => {
-    console.log('[Chapter] Starting to load react-player module...');
-    return import("react-player").then((module) => {
-      console.log('[Chapter] react-player module loaded successfully');
-      return module;
-    }).catch((err) => {
-      console.error('[Chapter] Failed to load react-player module:', err);
-      // Return a dummy component that will trigger fallback
-      return { default: () => null };
-    });
-  },
-  { 
-    ssr: false,
-    loading: () => {
-      console.log('[Chapter] ReactPlayer component is loading...');
-      return (
-        <div className="w-full h-full flex items-center justify-center bg-black">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
-            <p className="text-white text-sm">טוען נגן וידאו...</p>
-          </div>
-        </div>
-      );
-    }
-  }
-) as React.ComponentType<any>;
 
 interface Reference {
   id: string;
@@ -67,15 +38,12 @@ export default function ChapterPage() {
   const router = useRouter();
   const chapterId = params.chapterId as string;
   
-  const playerRef = useRef<any>(null);
   const youtubePlayerRef = useRef<any>(null); // For YouTube IFrame API
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [videoDuration, setVideoDuration] = useState(600); // Default 10 minutes
   const [videoError, setVideoError] = useState<string | null>(null);
-  const [playerLoaded, setPlayerLoaded] = useState(false);
-  const [useFallback, setUseFallback] = useState(false);
   const [youtubeAPIReady, setYoutubeAPIReady] = useState(false);
   const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
@@ -256,70 +224,9 @@ export default function ChapterPage() {
     fetchChapter();
   }, [chapterId]);
 
-  // Timeout for video loading - switch to fallback if ReactPlayer doesn't load
-  // Note: We wait a bit because ReactPlayer needs time to:
-  // 1. Load the module (dynamic import)
-  // 2. Initialize the YouTube player
-  // 3. Connect to YouTube API
-  // If we switch too early, we might interrupt a legitimate loading process
-  useEffect(() => {
-    if (chapter?.video_url && !isReady && !videoError && !playerLoaded && !useFallback) {
-      console.log('[Chapter] Setting timeout for video loading...', {
-        hasVideoUrl: !!chapter?.video_url,
-        isReady,
-        videoError,
-        playerLoaded,
-        useFallback,
-        playerRefExists: !!playerRef.current
-      });
-      const timeout = setTimeout(() => {
-        console.warn('[Chapter] Video loading timeout - switching to fallback iframe', {
-          isReady,
-          videoError,
-          playerLoaded,
-          useFallback,
-          playerRefExists: !!playerRef.current
-        });
-        // Switch to fallback if ReactPlayer doesn't load
-        if (!isReady && !playerLoaded) {
-          console.log('[Chapter] ReactPlayer failed to load, switching to iframe fallback');
-          setUseFallback(true);
-        }
-      }, 3000); // 3 seconds timeout - enough for ReactPlayer to initialize, but not too long
+  // No timeout needed - we use YouTube IFrame API directly
 
-      return () => clearTimeout(timeout);
-    }
-  }, [chapter?.video_url, isReady, videoError, playerLoaded, useFallback]);
-
-  // Get video duration after player is ready
-  useEffect(() => {
-    if (isReady && playerRef.current && videoDuration === 600) {
-      const checkDuration = () => {
-        try {
-          if (playerRef.current && playerRef.current.getDuration) {
-            const duration = playerRef.current.getDuration();
-            if (duration && duration > 0 && duration !== Infinity && !isNaN(duration)) {
-              setVideoDuration(duration);
-              console.log('[Chapter] Video duration from useEffect:', duration);
-              return;
-            }
-          }
-        } catch (err) {
-          // Ignore errors
-        }
-      };
-
-      // Try immediately
-      checkDuration();
-
-      // Try again after a short delay (YouTube API sometimes needs time)
-      const timeout = setTimeout(() => {
-        checkDuration();
-      }, 1000);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [isReady, videoDuration]);
+  // Video duration is set in YouTube IFrame API onReady event
 
   // Extract YouTube video ID for fallback
   const getYouTubeVideoId = (url: string) => {
@@ -360,9 +267,9 @@ export default function ChapterPage() {
     };
   }, [chapter?.video_url]);
 
-  // Initialize YouTube Player when API is ready and using fallback
+  // Initialize YouTube Player when API is ready
   useEffect(() => {
-    if (!youtubeAPIReady || !useFallback || !chapter?.video_url) return;
+    if (!youtubeAPIReady || !chapter?.video_url) return;
     if (!(window as any).YT || !(window as any).YT.Player) return;
 
     const videoId = getYouTubeVideoId(chapter.video_url);
@@ -376,6 +283,7 @@ export default function ChapterPage() {
           playsinline: 1,
           modestbranding: 1,
           rel: 0,
+          autoplay: 0,
         },
         events: {
           onReady: (event: any) => {
@@ -385,6 +293,7 @@ export default function ChapterPage() {
               if (duration && duration > 0) {
                 setVideoDuration(duration);
                 setIsReady(true);
+                setVideoError(null);
               }
             } catch (err) {
               console.warn('Could not get duration from YouTube API:', err);
@@ -398,12 +307,17 @@ export default function ChapterPage() {
               setPlaying(false);
             }
           },
+          onError: (event: any) => {
+            console.error('[Chapter] YouTube player error:', event.data);
+            setVideoError('שגיאה בטעינת הוידאו. נסה לרענן את הדף או לבדוק את הקישור.');
+          },
         },
       });
     } catch (err) {
       console.error('Error initializing YouTube IFrame API player:', err);
+      setVideoError('שגיאה באתחול נגן הוידאו. נסה לרענן את הדף.');
     }
-  }, [youtubeAPIReady, useFallback, chapter?.video_url]);
+  }, [youtubeAPIReady, chapter?.video_url]);
 
   // Handle URL parameters for opening specific reference
   useEffect(() => {
@@ -417,20 +331,12 @@ export default function ChapterPage() {
       const ref = references.find(r => r.id === refId);
       if (ref) {
         setSelectedReference(ref);
-        // Seek to the timestamp
-        if (playerRef.current) {
+        // Seek to the timestamp using YouTube IFrame API
+        if (youtubePlayerRef.current && typeof youtubePlayerRef.current.seekTo === 'function') {
           try {
             const time = parseInt(timeParam);
-            if (playerRef.current.seekTo) {
-              playerRef.current.seekTo(time, "seconds");
-            } else if (playerRef.current.getInternalPlayer) {
-              const internalPlayer = playerRef.current.getInternalPlayer();
-              if (internalPlayer && typeof internalPlayer.seekTo === 'function') {
-                internalPlayer.seekTo(time);
-              } else if (internalPlayer && typeof internalPlayer.currentTime !== 'undefined') {
-                internalPlayer.currentTime = time;
-              }
-            }
+            youtubePlayerRef.current.seekTo(time, true);
+            youtubePlayerRef.current.playVideo();
             setPlaying(true);
           } catch (err) {
             console.error('Error seeking to timestamp from URL:', err);
@@ -610,21 +516,13 @@ export default function ChapterPage() {
   }, []);
 
   const handleReferenceClick = (reference: Reference) => {
-    if (playerRef.current && isReady) {
+    if (youtubePlayerRef.current && isReady) {
       try {
-        // Try to seek using ReactPlayer's seekTo method
-        if (playerRef.current.seekTo) {
-          playerRef.current.seekTo(reference.timestamp, "seconds");
+        // Seek using YouTube IFrame API
+        if (typeof youtubePlayerRef.current.seekTo === 'function') {
+          youtubePlayerRef.current.seekTo(reference.timestamp, true);
+          youtubePlayerRef.current.playVideo();
           setPlaying(true);
-        } else if (playerRef.current.getInternalPlayer) {
-          const internalPlayer = playerRef.current.getInternalPlayer();
-          if (internalPlayer && typeof internalPlayer.seekTo === 'function') {
-            internalPlayer.seekTo(reference.timestamp);
-            setPlaying(true);
-          } else if (internalPlayer && typeof internalPlayer.currentTime !== 'undefined') {
-            internalPlayer.currentTime = reference.timestamp;
-            setPlaying(true);
-          }
         }
       } catch (err) {
         console.error('Error seeking to timestamp:', err);
@@ -660,49 +558,15 @@ export default function ChapterPage() {
   };
 
   const getCurrentTime = async (): Promise<number> => {
-    // Try ReactPlayer first
-    if (playerRef.current && isReady) {
-      try {
-        if (playerRef.current.getCurrentTime) {
-          return Math.floor(playerRef.current.getCurrentTime());
-        } else if (playerRef.current.getInternalPlayer) {
-          const internalPlayer = playerRef.current.getInternalPlayer();
-          if (internalPlayer && typeof internalPlayer.getCurrentTime === 'function') {
-            return Math.floor(internalPlayer.getCurrentTime());
-          } else if (internalPlayer && typeof internalPlayer.currentTime === 'number') {
-            return Math.floor(internalPlayer.currentTime);
-          }
-        }
-      } catch (err) {
-        console.error('Error getting current time from ReactPlayer:', err);
-      }
-    }
-    
-    // Try YouTube IFrame API
+    // Use YouTube IFrame API
     if (youtubePlayerRef.current && typeof youtubePlayerRef.current.getCurrentTime === 'function') {
       try {
         const time = youtubePlayerRef.current.getCurrentTime();
-        if (time && !isNaN(time)) {
+        if (time && !isNaN(time) && time >= 0) {
           return Math.floor(time);
         }
       } catch (err) {
         console.error('Error getting current time from YouTube API:', err);
-      }
-    }
-    
-    // Fallback: try to get from iframe via postMessage
-    if (iframeRef.current && chapter?.video_url) {
-      try {
-        const videoId = getYouTubeVideoId(chapter.video_url);
-        if (videoId) {
-          // Try to get time via postMessage (this might not work due to CORS)
-          iframeRef.current.contentWindow?.postMessage(
-            JSON.stringify({ event: 'command', func: 'getCurrentTime', args: '' }),
-            'https://www.youtube.com'
-          );
-        }
-      } catch (err) {
-        console.error('Error getting time from iframe:', err);
       }
     }
     
@@ -720,7 +584,7 @@ export default function ChapterPage() {
 
     const currentTime = await getCurrentTime();
     
-    if (currentTime === 0 && useFallback && !isReady) {
+    if (currentTime === 0 && !isReady) {
       // If we can't get time, show a message but still allow manual input
       const userConfirmed = confirm('לא ניתן לקבל את הזמן המדויק אוטומטית. האם תרצה להזין את הזמן ידנית?');
       if (!userConfirmed) {
@@ -1235,121 +1099,38 @@ export default function ChapterPage() {
             >
               {chapter.video_url ? (
                 <>
-                  {useFallback ? (
-                    (() => {
-                      const videoId = getYouTubeVideoId(chapter.video_url);
-                      if (!videoId) {
-                        return (
-                          <div className="w-full h-full flex items-center justify-center bg-black">
-                            <p className="text-red-400">שגיאה: לא ניתן לזהות את קישור הוידאו</p>
-                          </div>
-                        );
-                      }
-                      const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
+                  {(() => {
+                    const videoId = getYouTubeVideoId(chapter.video_url);
+                    if (!videoId) {
                       return (
-                        <div className="w-full h-full absolute inset-0">
-                          <iframe
-                            id="youtube-player-iframe"
-                            ref={iframeRef}
-                            src={embedUrl}
-                            className="w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            title={chapter.title}
-                            style={{ pointerEvents: targetingMode ? 'none' : 'auto' }}
-                          />
-                          {/* Overlay for targeting mode to capture clicks */}
-                          {targetingMode && (
-                            <div 
-                              className="absolute inset-0 z-10"
-                              style={{ pointerEvents: 'auto' }}
-                            />
-                          )}
+                        <div className="w-full h-full flex items-center justify-center bg-black">
+                          <p className="text-red-400">שגיאה: לא ניתן לזהות את קישור הוידאו</p>
                         </div>
                       );
-                    })()
-                  ) : typeof window !== 'undefined' ? (
-                    <ReactPlayer
-                        ref={playerRef}
-                        url={chapter.video_url}
-                        width="100%"
-                        height="100%"
-                        playing={playing}
-                        light={false}
-                        onStart={() => {
-                          console.log('[Chapter] Video started');
-                          setPlayerLoaded(true);
-                        }}
-                        onPlay={() => {
-                          console.log('[Chapter] Video playing');
-                          setPlaying(true);
-                          setVideoError(null);
-                          setPlayerLoaded(true);
-                        }}
-                        onPause={() => {
-                          console.log('[Chapter] Video paused');
-                          setPlaying(false);
-                        }}
-                        onError={(error: any) => {
-                          console.error('[Chapter] Video player error:', error);
-                          console.error('[Chapter] Video URL:', chapter.video_url);
-                          console.error('[Chapter] Error details:', {
-                            message: error?.message,
-                            type: error?.type,
-                            data: error?.data
-                          });
-                          setVideoError('שגיאה בטעינת הוידאו. נסה לרענן את הדף או לבדוק את הקישור.');
-                          setUseFallback(true); // Switch to fallback on error
-                        }}
-                        onReady={() => {
-                          console.log('[Chapter] Video player ready - SUCCESS!');
-                          setIsReady(true);
-                          setPlayerLoaded(true);
-                          setVideoError(null);
-                          // Try to get video duration
-                          try {
-                            if (playerRef.current && playerRef.current.getDuration) {
-                              const duration = playerRef.current.getDuration();
-                              if (duration && duration > 0) {
-                                setVideoDuration(duration);
-                                console.log('[Chapter] Video duration:', duration);
-                              }
-                            } else if (playerRef.current && playerRef.current.getInternalPlayer) {
-                              const internalPlayer = playerRef.current.getInternalPlayer();
-                              if (internalPlayer && typeof internalPlayer.getDuration === 'function') {
-                                const duration = internalPlayer.getDuration();
-                                if (duration && duration > 0) {
-                                  setVideoDuration(duration);
-                                  console.log('[Chapter] Video duration:', duration);
-                                }
-                              }
-                            }
-                          } catch (err) {
-                            console.warn('Could not get video duration:', err);
-                          }
-                        }}
-                        onProgress={(state: any) => {
-                          // This fires frequently, so we know the player is working
-                          if (!playerLoaded) {
-                            console.log('[Chapter] Video player progress - player is working', state);
-                            setPlayerLoaded(true);
-                          }
-                        }}
-                        controls={!targetingMode}
-                        className="aspect-video"
-                        config={{
-                          youtube: {
-                            playerVars: {
-                              modestbranding: 1,
-                              rel: 0,
-                              autoplay: 0,
-                              enablejsapi: 1,
-                              playsinline: 1,
-                            },
-                          },
-                        }}
-                      />
-                  ) : null}
+                    }
+                    const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`;
+                    return (
+                      <div className="w-full h-full absolute inset-0">
+                        <iframe
+                          id="youtube-player-iframe"
+                          ref={iframeRef}
+                          src={embedUrl}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title={chapter.title}
+                          style={{ pointerEvents: targetingMode ? 'none' : 'auto' }}
+                        />
+                        {/* Overlay for targeting mode to capture clicks */}
+                        {targetingMode && (
+                          <div 
+                            className="absolute inset-0 z-10"
+                            style={{ pointerEvents: 'auto' }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })()}
                   {videoError && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/80">
                       <div className="text-center p-4">
@@ -1363,12 +1144,11 @@ export default function ChapterPage() {
                       </div>
                     </div>
                   )}
-                  {!isReady && !videoError && !playerLoaded && !useFallback && (
+                  {!isReady && !videoError && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <div className="text-center">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
                         <p className="text-white text-sm">טוען וידאו...</p>
-                        <p className="text-white text-xs mt-2 opacity-70">אם זה לוקח זמן רב, נסה לרענן את הדף</p>
                       </div>
                     </div>
                   )}
