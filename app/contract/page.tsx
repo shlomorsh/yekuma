@@ -25,8 +25,12 @@ export default function ContractPage() {
   const [rememberMe, setRememberMe] = useState(true);
 
   // Helper function to convert username to email
+  // Using a valid domain format that Supabase will accept
   const usernameToEmail = (username: string) => {
-    return `${username.toLowerCase().trim()}@yekumot.local`;
+    // Clean username: remove spaces, special chars, and convert to lowercase
+    const cleanUsername = username.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
+    // Use a valid domain format
+    return `${cleanUsername}@yekumot.app`;
   };
 
   // Check if already logged in
