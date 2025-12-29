@@ -58,6 +58,7 @@ export default function ChapterPage() {
   const [isReady, setIsReady] = useState(false);
   const [videoDuration, setVideoDuration] = useState(600); // Default 10 minutes
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [playerLoaded, setPlayerLoaded] = useState(false);
   const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
   const [references, setReferences] = useState<Reference[]>([]);
   const [chapter, setChapter] = useState<Chapter | null>(null);
@@ -223,6 +224,18 @@ export default function ChapterPage() {
 
     fetchChapter();
   }, [chapterId]);
+
+  // Timeout for video loading
+  useEffect(() => {
+    if (chapter?.video_url && !isReady && !videoError && !playerLoaded) {
+      const timeout = setTimeout(() => {
+        console.warn('[Chapter] Video loading timeout - player may not be loading');
+        setVideoError('הוידאו לא נטען. נסה לרענן את הדף או לבדוק את החיבור לאינטרנט.');
+      }, 15000); // 15 seconds timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [chapter?.video_url, isReady, videoError, playerLoaded]);
 
   // Handle URL parameters for opening specific reference
   useEffect(() => {
@@ -1005,11 +1018,21 @@ export default function ChapterPage() {
                     width="100%"
                     height="100%"
                     playing={playing}
+                    light={false}
+                    onStart={() => {
+                      console.log('[Chapter] Video started');
+                      setPlayerLoaded(true);
+                    }}
                     onPlay={() => {
+                      console.log('[Chapter] Video playing');
                       setPlaying(true);
                       setVideoError(null);
+                      setPlayerLoaded(true);
                     }}
-                    onPause={() => setPlaying(false)}
+                    onPause={() => {
+                      console.log('[Chapter] Video paused');
+                      setPlaying(false);
+                    }}
                     onError={(error: any) => {
                       console.error('[Chapter] Video player error:', error);
                       console.error('[Chapter] Video URL:', chapter.video_url);
@@ -1023,6 +1046,7 @@ export default function ChapterPage() {
                     onReady={() => {
                       console.log('[Chapter] Video player ready');
                       setIsReady(true);
+                      setPlayerLoaded(true);
                       setVideoError(null);
                       // Try to get video duration
                       try {
@@ -1046,6 +1070,13 @@ export default function ChapterPage() {
                         console.warn('Could not get video duration:', err);
                       }
                     }}
+                    onProgress={(state: any) => {
+                      // This fires frequently, so we know the player is working
+                      if (!playerLoaded) {
+                        console.log('[Chapter] Video player progress - player is working');
+                        setPlayerLoaded(true);
+                      }
+                    }}
                     onDuration={(duration: number) => {
                       if (duration && duration > 0) {
                         setVideoDuration(duration);
@@ -1062,16 +1093,11 @@ export default function ChapterPage() {
                           autoplay: 0,
                           enablejsapi: 1,
                           origin: typeof window !== 'undefined' ? window.location.origin : '',
+                          playsinline: 1,
                         },
                       },
                     }}
                   />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-black">
-                      <div className="text-center">
-                        <p className="text-white mb-2">טוען נגן וידאו...</p>
-                      </div>
-                    </div>
                   )}
                   {videoError && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/80">
@@ -1086,11 +1112,12 @@ export default function ChapterPage() {
                       </div>
                     </div>
                   )}
-                  {!isReady && !videoError && (
+                  {!isReady && !videoError && !playerLoaded && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <div className="text-center">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
                         <p className="text-white text-sm">טוען וידאו...</p>
+                        <p className="text-white text-xs mt-2 opacity-70">אם זה לוקח זמן רב, נסה לרענן את הדף</p>
                       </div>
                     </div>
                   )}
