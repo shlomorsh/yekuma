@@ -1296,20 +1296,10 @@ export default function ChapterPage() {
 
             {/* Reference Details */}
             {selectedReference && (
-              <div className={`bg-zinc-900/80 backdrop-blur-sm rounded-xl p-6 shadow-2xl border-2 ${
-                selectedReference.verified 
-                  ? "border-yellow-500/50 bg-yellow-950/10" 
-                  : "border-zinc-800"
-              }`}>
+              <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl p-6 shadow-2xl border-2 border-zinc-800">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <h2 className="text-2xl font-bold text-white">פרטי רפרנס</h2>
-                    {selectedReference.verified && (
-                      <span className="flex items-center gap-1 text-yellow-400 font-semibold bg-yellow-950/30 px-3 py-1 rounded-lg border border-yellow-500/50">
-                        <span>⭐</span>
-                        <span>מאומת</span>
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {user && selectedReference.userId && selectedReference.userId !== user.id && !selectedReference.hasUserVerified && !selectedReference.verified && (
@@ -1555,11 +1545,6 @@ export default function ChapterPage() {
                                 }`}>
                                   {ref.title}
                                 </span>
-                                {ref.verified && (
-                                  <span className="text-yellow-400 text-xs" title="מאומת">
-                                    ⭐
-                                  </span>
-                                )}
                               </div>
                               <span className={`text-xs font-mono px-2 py-1 rounded ${
                                 selectedReference?.id === ref.id

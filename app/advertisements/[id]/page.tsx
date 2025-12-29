@@ -242,12 +242,6 @@ export default function AdvertisementPage() {
               )}
               <div className="flex items-center gap-4 text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
                 <span>{advertisement.view_count || 0} צפיות</span>
-                {advertisement.verified && (
-                  <span className="flex items-center gap-1" style={{ color: '#FF6B00' }}>
-                    <span>⭐</span>
-                    <span>מאומת</span>
-                  </span>
-                )}
               </div>
             </div>
             {user && (

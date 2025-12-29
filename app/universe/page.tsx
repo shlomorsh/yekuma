@@ -208,12 +208,6 @@ export default function UniversePage() {
                                         <div className="absolute top-2 right-2 px-2 py-1 text-xs wireframe-border" style={{ color: typeColor, fontFamily: 'var(--font-mono)', background: '#000000' }}>
                                             {getTypeLabel(item.item_type)}
                                         </div>
-                                        {item.verified && (
-                                            <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                                                <span>⭐</span>
-                                                <span>מאומת</span>
-                                            </div>
-                                        )}
                                     </div>
                                     <div className="p-4">
                                         <h3 className="text-lg font-bold mb-1 transition-colors glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>

@@ -577,12 +577,6 @@ export default function Home() {
                         </svg>
                       </div>
                     )}
-                    {character.verified && (
-                      <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                        <span>⭐</span>
-                        <span>מאומת</span>
-                      </div>
-                    )}
                   </div>
                   <div className="p-4 text-layer">
                     <h3 className="text-lg font-bold mb-1 transition-colors" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
@@ -650,11 +644,6 @@ export default function Home() {
                       ) : (
                         <div className="absolute inset-0 bg-black" />
                       )}
-                      {item.verified && (
-                        <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                          <span>⭐</span>
-                        </div>
-                      )}
                     </div>
                   </Link>
                 );
@@ -663,6 +652,21 @@ export default function Home() {
           )}
         </section>
       </div>
+
+      {/* Footer */}
+      <footer className="mt-20 pb-8 text-center">
+        <p className="text-xs opacity-50" style={{ fontFamily: 'var(--font-mono)' }}>
+          נבנה ע"י{" "}
+          <a
+            href="https://wa.me/972507300706"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:opacity-75 transition-opacity"
+          >
+            שלומי
+          </a>
+        </p>
+      </footer>
 
     </div>
   );

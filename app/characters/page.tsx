@@ -161,12 +161,6 @@ export default function CharactersPage() {
                         </svg>
                       </div>
                     )}
-                    {character.verified && (
-                      <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                        <span>⭐</span>
-                        <span>מאומת</span>
-                      </div>
-                    )}
                   </div>
                   
                   {/* Text Layer */}

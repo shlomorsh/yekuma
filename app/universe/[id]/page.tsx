@@ -291,12 +291,6 @@ export default function UniverseItemPage() {
                             )}
                             <div className="flex items-center gap-4 text-sm" style={{ color: typeColor, fontFamily: 'var(--font-mono)' }}>
                                 <span>{item.view_count || 0} צפיות</span>
-                                {item.verified && (
-                                    <span className="flex items-center gap-1" style={{ color: '#FF6B00' }}>
-                                        <span>⭐</span>
-                                        <span>מאומת</span>
-                                    </span>
-                                )}
                             </div>
                         </div>
                         {user && (
