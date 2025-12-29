@@ -1019,7 +1019,6 @@ export default function ChapterPage() {
               {chapter.video_url ? (
                 <>
                   {useFallback ? (
-                    // Fallback: Direct YouTube iframe
                     (() => {
                       const videoId = getYouTubeVideoId(chapter.video_url);
                       if (!videoId) {
@@ -1029,10 +1028,11 @@ export default function ChapterPage() {
                           </div>
                         );
                       }
+                      const embedUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1${typeof window !== 'undefined' ? `&origin=${window.location.origin}` : ''}`;
                       return (
                         <div className="w-full h-full">
                           <iframe
-                            src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                            src={embedUrl}
                             className="w-full h-full aspect-video"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
