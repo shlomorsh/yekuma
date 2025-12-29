@@ -399,20 +399,6 @@ export default function CharacterPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Image */}
-                {character.image_url && (
-                  <div className="wireframe-border p-4 bg-transparent">
-                    <div className="relative aspect-square w-full max-w-md mx-auto">
-                      <Image
-                        src={character.image_url}
-                        alt={character.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                )}
-
                 {/* Content Sections */}
                 {Object.keys(contentSections).length > 0 ? (
                   <div className="space-y-6">
