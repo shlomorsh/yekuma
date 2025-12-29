@@ -215,175 +215,94 @@ export default function ContractPage() {
             </div>
 
             {/* Verse 1 */}
-            <div className="text-right space-y-2">
-              <div className="relative">
-                <div className="flex justify-end items-start gap-1 mb-1" style={{ direction: 'rtl' }}>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Am</span>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                </div>
-                <div style={{ color: '#FFFFFF' }}>שמיים של עצב עלי והלילה</div>
-              </div>
-              <div className="relative">
-                <div className="flex justify-end items-start gap-1 mb-1" style={{ direction: 'rtl' }}>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Am</span>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Em</span>
-                </div>
-                <div style={{ color: '#FFFFFF' }}>נוטף לעתו כמו חלב הנר</div>
-              </div>
-              <div className="relative">
-                <div className="flex justify-end items-start gap-1 mb-1" style={{ direction: 'rtl' }}>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Dm</span>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Am</span>
-                </div>
-                <div style={{ color: '#FFFFFF' }}>חרמש וירח כאן מלמעלה</div>
-              </div>
-              <div className="relative">
-                <div className="flex justify-end items-start gap-1 mb-1" style={{ direction: 'rtl' }}>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                  <span className="text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                </div>
-                <div style={{ color: '#FFFFFF' }}>אומר לי לך הלאה אל תשבר</div>
-              </div>
+            <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G    F     G                      Am</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>שמיים של עצב עלי והלילה</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>Em              G         Am</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>נוטף לעתו כמו חלב הנר</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>Am                     Dm</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>חרמש וירח כאן מלמעלה</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>                     G      F             G</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>אומר לי לך הלאה אל תשבר</div>
             </div>
 
             {/* Verse 2 */}
-            <div className="text-right space-y-1">
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Am</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>רכבת הלילה מלאה געגוע</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Em</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Am</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>ואני ברציף מחכה כמו לנס</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Am</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Dm</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>בגיל של בדידות אני קרוע</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>אומר לי לנוע ועוד לחפש</div>
+            <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G    F     G                     Am</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>רכבת הלילה מלאה געגוע</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>Em             G            Am</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ואני ברציף מחכה כמו לנס</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>Am                            Dm</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>בגיל של בדידות אני קרוע</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>          G      F                   G</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>אומר לי לנוע ועוד לחפש</div>
             </div>
 
             {/* Chorus */}
-            <div className="text-right space-y-1">
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>C</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>ושוב געגוע פגוע נטוע</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>מרעל זיכרונות</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>C</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>גופי בלי גופך שוב</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>גווע שוקע שוקע שוקע</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>Am</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>כאן לבד בין הקירות</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>C</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>איורו איורו ובוכה אל הקירות</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>C</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>איורו איורו וצועק אל הקירות</div>
+            <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}> G                  C</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ושוב געגוע פגוע נטוע</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G               F</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>מרעל זיכרונות</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>C</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>גופי בלי גופך שוב</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}> G      F                G</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>גווע שוקע שוקע שוקע</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>      G                Am</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>כאן לבד בין הקירות</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו ובוכה אל הקירות</div>
+              <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו וצועק אל הקירות</div>
             </div>
 
             {/* Verse 3 */}
-            <div className="text-right space-y-1">
-              <div style={{ color: '#FFFFFF' }}>השמש זורחת</div>
-              <div style={{ color: '#FFFFFF' }}>בעיר הזרה לי</div>
-              <div style={{ color: '#FFFFFF' }}>לא יודע לאן</div>
-              <div style={{ color: '#FFFFFF' }}>מוליכים הרחובות</div>
-              <div style={{ color: '#FFFFFF' }}>רק זה שאליך הולך</div>
-              <div style={{ color: '#FFFFFF' }}>הוא יקרא לי</div>
-              <div style={{ color: '#FFFFFF' }}>תראי איך יקרא לי</div>
-              <div style={{ color: '#FFFFFF' }}>יגיד לי לבוא</div>
+            <div className="text-right space-y-2">
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>השמש זורחת</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>בעיר הזרה לי</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>לא יודע לאן</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>מוליכים הרחובות</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>רק זה שאליך הולך</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>הוא יקרא לי</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>תראי איך יקרא לי</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>יגיד לי לבוא</div>
             </div>
 
             {/* Verse 4 */}
-            <div className="text-right space-y-1">
-              <div style={{ color: '#FFFFFF' }}>ללכת שנית לאיבוד בעינייך</div>
-              <div style={{ color: '#FFFFFF' }}>לחבק אותך שוב לחבקך שוב אליי</div>
-              <div style={{ color: '#FFFFFF' }}>עקבות לא השארת שאליך אחריך</div>
-              <div style={{ color: '#FFFFFF' }}>השארת את פניך צרובות בעיניי</div>
+            <div className="text-right space-y-2">
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ללכת שנית לאיבוד בעינייך</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>לחבק אותך שוב לחבקך שוב אליי</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>עקבות לא השארת שאליך אחריך</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>השארת את פניך צרובות בעיניי</div>
             </div>
 
             {/* Chorus Repeat */}
-            <div className="text-right space-y-1">
-              <div style={{ color: '#FFFFFF' }}>ושוב געגוע פגוע</div>
-              <div style={{ color: '#FFFFFF' }}>נגוע מרעל זיכרונות</div>
-              <div style={{ color: '#FFFFFF' }}>גופי בלי גופך שוב</div>
-              <div style={{ color: '#FFFFFF' }}>גווע שוקע שוקע שוקע</div>
-              <div style={{ color: '#FFFFFF' }}>כאן לבד בין הקירות</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>C</span>
+            <div className="text-right space-y-2">
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ושוב געגוע פגוע</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>נגוע מרעל זיכרונות</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>גופי בלי גופך שוב</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>גווע שוקע שוקע שוקע</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>כאן לבד בין הקירות</div>
+              <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
+                <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
+                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו ובוכה אל הקירות</div>
+                <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
+                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו וצועק אל הקירות</div>
               </div>
-              <div style={{ color: '#FFFFFF' }}>איורו איורו ובוכה אל הקירות</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>C</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>איורו איורו וצועק אל הקירות</div>
             </div>
 
             {/* Ending */}
-            <div className="text-right space-y-1">
-              <div style={{ color: '#FFFFFF' }}>שוקע שוקע</div>
-              <div style={{ color: '#FFFFFF' }}>כאן לבד בין הקירות</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>C</span>
+            <div className="text-right space-y-2">
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>שוקע שוקע</div>
+              <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>כאן לבד בין הקירות</div>
+              <div className="text-right space-y-2" style={{ fontFamily: 'monospace', whiteSpace: 'pre' }}>
+                <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
+                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו ובוכה אל הקירות</div>
+                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>שוקע גווע</div>
+                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>ובוכה אל הקירות</div>
+                <div style={{ color: '#008C9E', fontSize: '0.9rem', lineHeight: '1.2', textAlign: 'right' }}>G           F         G       C</div>
+                <div style={{ color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.4', textAlign: 'right' }}>איורו איורו וצועק אל הקירות</div>
               </div>
-              <div style={{ color: '#FFFFFF' }}>איורו איורו ובוכה אל הקירות</div>
-              <div style={{ color: '#FFFFFF' }}>שוקע גווע</div>
-              <div style={{ color: '#FFFFFF' }}>ובוכה אל הקירות</div>
-              <div className="flex justify-end items-baseline gap-2 flex-wrap">
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>F</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>G</span>
-                <span className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>C</span>
-              </div>
-              <div style={{ color: '#FFFFFF' }}>איורו איורו וצועק אל הקירות</div>
             </div>
           </div>
 
