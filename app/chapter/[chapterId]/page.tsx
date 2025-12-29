@@ -9,17 +9,30 @@ import { supabase } from "@/lib/supabase";
 import ContractModal from "@/app/components/ContractModal";
 
 const ReactPlayer = dynamic(
-  () => import("react-player"),
+  () => {
+    console.log('[Chapter] Starting to load react-player module...');
+    return import("react-player").then((module) => {
+      console.log('[Chapter] react-player module loaded successfully');
+      return module;
+    }).catch((err) => {
+      console.error('[Chapter] Failed to load react-player module:', err);
+      // Return a dummy component that will trigger fallback
+      return { default: () => null };
+    });
+  },
   { 
     ssr: false,
-    loading: () => (
-      <div className="w-full h-full flex items-center justify-center bg-black">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
-          <p className="text-white text-sm">טוען נגן וידאו...</p>
+    loading: () => {
+      console.log('[Chapter] ReactPlayer component is loading...');
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-black">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
+            <p className="text-white text-sm">טוען נגן וידאו...</p>
+          </div>
         </div>
-      </div>
-    )
+      );
+    }
   }
 ) as React.ComponentType<any>;
 
@@ -1090,9 +1103,7 @@ export default function ChapterPage() {
                       );
                     })()
                   ) : typeof window !== 'undefined' ? (
-                    <>
-                      {console.log('[Chapter] About to render ReactPlayer, URL:', chapter.video_url)}
-                      <ReactPlayer
+                    <ReactPlayer
                         ref={playerRef}
                         url={chapter.video_url}
                         width="100%"
