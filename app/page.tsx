@@ -55,27 +55,6 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  // Track mouse for parallax effects - throttled for performance
-  useEffect(() => {
-    let rafId: number | null = null;
-    const handleMouseMove = (e: MouseEvent) => {
-      if (rafId === null) {
-        rafId = requestAnimationFrame(() => {
-          setMousePosition({ x: e.clientX, y: e.clientY });
-          rafId = null;
-        });
-      }
-    };
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-  }, []);
 
   // Check authentication status and handle magic link
   useEffect(() => {
@@ -484,11 +463,6 @@ export default function Home() {
     }
   };
 
-  // Calculate parallax offset (only on client side)
-  const parallaxOffset = typeof window !== 'undefined' ? {
-    x: (mousePosition.x / window.innerWidth - 0.5) * 20,
-    y: (mousePosition.y / window.innerHeight - 0.5) * 20,
-  } : { x: 0, y: 0 };
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative" style={{ fontFamily: 'var(--font-heebo)' }}>
@@ -714,7 +688,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* Wiki Items Section - Nonsense Grid with Masonry */}
+        {/* Wiki Items Section */}
         <section className="mb-20">
           <div className="flex items-center gap-4 mb-8">
             <h2 className="text-4xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>היקום</h2>
@@ -729,7 +703,7 @@ export default function Home() {
               <p>אין פריטים עדיין</p>
             </div>
           ) : (
-            <div className="masonry-grid">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {wikiItems.map((item) => {
                 const getTypeColors = () => {
                   switch (item.item_type) {
@@ -765,14 +739,13 @@ export default function Home() {
 
                 const colors = getTypeColors();
                 const href = getHref();
-                const randomHeight = Math.floor(Math.random() * 200) + 300; // Varying heights for masonry
 
                 return (
                   <Link
                     key={`${item.item_type}-${item.id}`}
                     href={href}
-                    className="masonry-item wireframe-border overflow-hidden glitch-hover rgb-split"
-                    style={{ background: 'transparent', minHeight: `${randomHeight}px` }}
+                    className="wireframe-border overflow-hidden glitch-hover rgb-split"
+                    style={{ background: 'transparent' }}
                     data-title={item.title}
                   >
                     <div className="relative bg-black" style={{ height: '200px' }}>

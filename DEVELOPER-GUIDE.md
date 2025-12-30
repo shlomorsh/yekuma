@@ -65,8 +65,8 @@
 - created_at (TIMESTAMPTZ)
 ```
 
-#### `characters`, `programs`, `advertisements`, `concepts`
-טבלאות הויקי (מבנה זהה):
+#### `characters`
+טבלת הדמויות:
 
 ```sql
 - id (UUID, PK)
@@ -74,15 +74,37 @@
 - description (TEXT, nullable)
 - content (TEXT) - תוכן עשיר (Markdown)
 - image_url (TEXT, nullable)
-- links (JSONB, default '[]')
+- links (JSONB, default '[]') - לא בשימוש
 - created_by (UUID, FK → auth.users)
 - updated_by (UUID, FK → auth.users)
 - created_at (TIMESTAMPTZ)
 - updated_at (TIMESTAMPTZ)
 - version (INTEGER, default 1)
 - view_count (INTEGER, default 0)
-- verified (BOOLEAN, default false)
+- verified (BOOLEAN, default false) - לא מעודכן
 ```
+
+#### `universe_items`
+טבלה מאוחדת לפריטי יקום (תכניות, פרסומות, מושגים):
+
+```sql
+- id (UUID, PK)
+- title (TEXT, UNIQUE)
+- description (TEXT, nullable)
+- content (TEXT) - תוכן עשיר (Markdown)
+- image_url (TEXT, nullable)
+- item_type (TEXT) - 'program' | 'advertisement' | 'concept'
+- links (JSONB, default '[]') - לא בשימוש
+- created_by (UUID, FK → auth.users)
+- updated_by (UUID, FK → auth.users)
+- created_at (TIMESTAMPTZ)
+- updated_at (TIMESTAMPTZ)
+- version (INTEGER, default 1)
+- view_count (INTEGER, default 0)
+- verified (BOOLEAN, default false) - לא מעודכן
+```
+
+**הערה:** בעבר היו טבלאות נפרדות `programs`, `advertisements`, `concepts`. עכשיו הכל מאוחד ב-`universe_items` עם שדה `item_type`.
 
 #### `profiles`
 פרופילי משתמשים.
@@ -124,37 +146,26 @@
 ```sql
 - id (UUID, PK)
 - reference_id (UUID, FK → references)
-- entity_type (TEXT) - 'character' | 'program' | 'advertisement' | 'concept'
+- entity_type (TEXT) - 'character' | 'universe_item'
 - entity_id (UUID)
 - created_by (UUID, FK → auth.users)
 - created_at (TIMESTAMPTZ)
 - UNIQUE(reference_id, entity_type, entity_id)
 ```
 
-#### `edit_history`
-היסטוריית עריכות.
+#### `reference_links`
+קישורים בין רפרנסים לרפרנסים אחרים.
 
 ```sql
 - id (UUID, PK)
-- entity_type (TEXT)
-- entity_id (UUID)
-- content (TEXT)
-- edited_by (UUID, FK → auth.users)
+- source_reference_id (UUID, FK → references)
+- target_reference_id (UUID, FK → references)
 - created_at (TIMESTAMPTZ)
+- UNIQUE(source_reference_id, target_reference_id)
+- CHECK (source_reference_id != target_reference_id)
 ```
 
-#### `edit_approvals`
-אישורי עריכות (למניעת ספאם).
-
-```sql
-- id (UUID, PK)
-- entity_type (TEXT)
-- entity_id (UUID)
-- edit_id (UUID, FK → edit_history)
-- approved_by (UUID, FK → auth.users)
-- approved_at (TIMESTAMPTZ)
-- UNIQUE(edit_id, approved_by)
-```
+**הערה:** `edit_history` ו-`edit_approvals` קיימות אבל לא בשימוש כרגע.
 
 ---
 
@@ -188,12 +199,23 @@
 - יוצר indexes
 
 #### `setup-wiki-system.sql`
-- יוצר טבלאות: `characters`, `programs`, `advertisements`, `concepts`
+- יוצר טבלת `characters`
 - יוצר טבלאות תמיכה: `reference_connections`, `edit_history`, `edit_approvals`
 - מגדיר RLS policies לכל הטבלאות
 - יוצר triggers לעדכון `updated_at` ו-`version`
 - יוצר פונקציות: `increment_view_count`, `award_wiki_points`
 - יוצר indexes
+
+#### `create-universe-table.sql`
+- יוצר טבלת `universe_items` (מאוחדת לתכניות/פרסומות/מושגים)
+- מגדיר RLS policies
+- יוצר triggers ו-indexes
+
+#### `migrate-data-to-universe.sql`
+- מעביר נתונים מטבלאות ישנות (`programs`, `advertisements`, `concepts`) ל-`universe_items`
+
+#### `cleanup-old-tables.sql`
+- מוחק טבלאות ישנות שלא בשימוש
 
 #### `insert-initial-data.sql`
 - מכניס 6 פרקים
@@ -226,10 +248,11 @@
 - **INSERT:** `TO authenticated WITH CHECK (auth.uid() = id)` - רק הפרופיל שלך
 - **UPDATE:** `TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id)` - רק הפרופיל שלך
 
-#### `characters`, `programs`, `advertisements`, `concepts`
+#### `characters`, `universe_items`
 - **SELECT:** `USING (true)` - כולם
 - **INSERT:** `TO authenticated WITH CHECK (true)` - כל משתמש מחובר
 - **UPDATE:** `TO authenticated USING (true) WITH CHECK (true)` - כל משתמש מחובר
+- **DELETE:** `TO authenticated USING (true)` - כל משתמש מחובר (רק ב-`universe_items`)
 
 **הערה:** בקוד, יש בדיקה נוספת שרק היוצר יכול למחוק.
 
@@ -274,27 +297,32 @@ SELECT award_wiki_points('user-uuid', 10, 'יצירת דמות');
 CASE entity_type_param
     WHEN 'character' THEN
         UPDATE characters SET view_count = view_count + 1 WHERE id = entity_id_param;
-    WHEN 'program' THEN
-        UPDATE programs SET view_count = view_count + 1 WHERE id = entity_id_param;
-    -- וכו'...
+    WHEN 'universe_item' THEN
+        UPDATE universe_items SET view_count = view_count + 1 WHERE id = entity_id_param;
 END CASE;
 ```
 
 **שימוש:**
 ```sql
 SELECT increment_view_count('character', 'character-uuid');
+SELECT increment_view_count('universe_item', 'item-uuid');
 ```
 
 ### Triggers
 
 #### `update_chapters_updated_at`
 מעדכן את `updated_at` בטבלת `chapters` לפני UPDATE.
+⚠️ **בעיה:** אין שדה `updated_at` ב-`chapters` - הטריגר לא עובד
 
 #### `update_wiki_updated_at`
-מעדכן את `updated_at` ו-`version` בטבלאות הויקי לפני UPDATE.
+מעדכן את `updated_at` ו-`version` בטבלת `characters` לפני UPDATE.
+
+#### `update_universe_items_updated_at`
+מעדכן את `updated_at` ו-`version` בטבלת `universe_items` לפני UPDATE.
 
 #### `update_updated_at_column`
 מעדכן את `updated_at` בטבלת `profiles` לפני UPDATE.
+⚠️ **בעיה:** אין שדה `updated_at` ב-`profiles` - הטריגר לא עובד
 
 ---
 
@@ -308,10 +336,9 @@ yekumot-app/
 │   ├── page.tsx           # דף הבית
 │   ├── chapter/           # דפי פרקים
 │   ├── characters/        # דפי דמויות
-│   ├── programs/          # דפי תכניות
-│   ├── advertisements/    # דפי פרסומות
-│   ├── concepts/          # דפי מושגים
+│   ├── universe/          # דפי פריטי יקום (תכניות/פרסומות/מושגים)
 │   ├── login/             # דף התחברות
+│   ├── contract/          # דף הרשמה (חוזה)
 │   └── components/        # קומפוננטות
 ├── lib/
 │   └── supabase.ts        # הגדרת Supabase client
@@ -428,9 +455,14 @@ idx_reference_links_target ON reference_links(target_reference_id)
 
 -- Wiki
 idx_characters_title ON characters(title)
-idx_programs_title ON programs(title)
-idx_advertisements_title ON advertisements(title)
-idx_concepts_title ON concepts(title)
+idx_characters_created_by ON characters(created_by)
+idx_characters_updated_by ON characters(updated_by)
+idx_universe_items_title ON universe_items(title)
+idx_universe_items_type ON universe_items(item_type)
+idx_universe_items_created_by ON universe_items(created_by)
+idx_universe_items_updated_by ON universe_items(updated_by)
+idx_universe_items_view_count ON universe_items(view_count DESC)
+idx_universe_items_created ON universe_items(created_at DESC)
 
 -- Reference Connections
 idx_reference_connections_ref ON reference_connections(reference_id)
@@ -473,13 +505,31 @@ await supabase.rpc('award_wiki_points', {
 
 ---
 
+## בדיקות הרשאות בקוד
+
+בנוסף ל-RLS Policies, יש בדיקות נוספות בקוד JavaScript:
+
+### מחיקת תוכן
+- **רפרנסים:** רק היוצר יכול למחוק (`user_id === user.id`)
+- **דמויות:** רק היוצר יכול למחוק (`created_by === user.id`)
+- **פריטי יקום:** רק היוצר יכול למחוק (`created_by === user.id`)
+
+### עריכת תוכן
+- **כל משתמש מחובר** יכול לערוך כל תוכן (דמות, פריט יקום, רפרנס)
+- אין הגבלה על עריכה, רק על מחיקה
+
+### אימותים
+- משתמש לא יכול לאמת רפרנס שהוא יצר
+- משתמש לא יכול לאמת את אותו רפרנס פעמיים (UNIQUE constraint)
+
 ## הערות חשובות
 
-1. **פרופילים נוצרים אוטומטית** - כאשר משתמש מחובר בפעם הראשונה
-2. **Username** - אופציונלי, אם לא מוגדר יוצג "Unknown"
+1. **פרופילים נוצרים אוטומטית** - כאשר משתמש נרשם (trigger `on_auth_user_created`)
+2. **Username** - נוצר אוטומטית מהאימייל (החלק לפני ה-@)
 3. **3-Second Rule** - מונע יצירת רפרנסים בטווח של +/- 3 שניות (Anti-Spam)
-4. **RLS Policies** - כל הטבלאות מוגנות ב-RLS
+4. **RLS Policies** - כל הטבלאות מוגנות ב-RLS (30 מדיניות)
 5. **Cascade Deletes** - מחיקת פרק מוחקת את כל הרפרנסים שלו
+6. **טבלת יקום מאוחדת** - תכניות/פרסומות/מושגים מאוחדים ב-`universe_items` עם `item_type`
 
 ---
 
@@ -500,6 +550,7 @@ WHERE routine_schema = 'public' ORDER BY routine_name;
 SELECT tablename, policyname FROM pg_policies
 WHERE schemaname = 'public' ORDER BY tablename, policyname;
 ```
+
 
 
 

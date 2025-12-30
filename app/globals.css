@@ -226,36 +226,6 @@ body > * {
   color: var(--retro-orange);
 }
 
-/* Masonry Grid */
-.masonry-grid {
-  column-count: 4;
-  column-gap: 1.5rem;
-}
-
-.masonry-item {
-  break-inside: avoid;
-  margin-bottom: 1.5rem;
-  border: 1px solid #FFFFFF;
-  background: transparent;
-}
-
-@media (max-width: 1200px) {
-  .masonry-grid {
-    column-count: 3;
-  }
-}
-
-@media (max-width: 768px) {
-  .masonry-grid {
-    column-count: 2;
-  }
-}
-
-@media (max-width: 480px) {
-  .masonry-grid {
-    column-count: 1;
-  }
-}
 
 /* Z-index sandwich for characters */
 .character-sandwich {
