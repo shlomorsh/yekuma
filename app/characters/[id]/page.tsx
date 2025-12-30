@@ -359,7 +359,7 @@ export default function CharacterPage() {
                 {character.created_by === user.id && (
                   <button
                     onClick={handleDeleteCharacter}
-                    className="wireframe-border px-6 py-3 bg-black text-red-400 hover:bg-red-400/10 transition-colors"
+                    className="btn-danger"
                     style={{ fontFamily: 'var(--font-mono)' }}
                   >
                     🗑️ מחק
