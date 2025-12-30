@@ -886,7 +886,7 @@ export default function ChapterPage() {
       <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
           <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>פרק לא נמצא</p>
-          <Link href="/" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
+          <Link href="/" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
             חזרה לדף הבית
           </Link>
         </div>
@@ -898,7 +898,7 @@ export default function ChapterPage() {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+          <div className="spinner spinner-large mb-4 mx-auto"></div>
           <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>טוען פרק...</div>
         </div>
       </div>
@@ -910,7 +910,7 @@ export default function ChapterPage() {
       <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
           <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>פרק לא נמצא</div>
-          <Link href="/" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
+          <Link href="/" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
             חזרה לדף הבית
           </Link>
         </div>
@@ -946,7 +946,7 @@ export default function ChapterPage() {
                   )}
                   <div className="relative group">
                     <button
-                      className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold hover:bg-blue-700 transition-colors"
+                      className="btn-avatar"
                     >
                       {email.charAt(0).toUpperCase()}
                     </button>
@@ -966,7 +966,7 @@ export default function ChapterPage() {
               ) : (
                 <button
                   onClick={() => setShowLoginModal(true)}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                  className="btn-primary flex items-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -1088,7 +1088,7 @@ export default function ChapterPage() {
                       type="text"
                       value={formatTime(formData.timestamp)}
                       readOnly
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-400 cursor-not-allowed"
+                      className="input-field"
                     />
                   </div>
                   <div>
@@ -1100,7 +1100,7 @@ export default function ChapterPage() {
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       required
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="input-field"
                       placeholder="הכנס כותרת רפרנס"
                     />
                   </div>
@@ -1112,7 +1112,7 @@ export default function ChapterPage() {
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       rows={4}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      className="input-field"
                       placeholder="הכנס תיאור רפרנס"
                     />
                   </div>
@@ -1124,7 +1124,7 @@ export default function ChapterPage() {
                       type="url"
                       value={formData.imageUrl}
                       onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="input-field"
                       placeholder="https://example.com/image.jpg"
                     />
                   </div>
@@ -1132,7 +1132,7 @@ export default function ChapterPage() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+                      className="btn-primary flex-1"
                     >
                       {saving ? 'שומר...' : 'שמור רפרנס'}
                     </button>
@@ -1148,7 +1148,7 @@ export default function ChapterPage() {
                         setShowAddForm(false);
                         setTargetingMode(false);
                       }}
-                      className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+                      className="btn-secondary flex-1"
                     >
                       ביטול
                     </button>
@@ -1178,14 +1178,14 @@ export default function ChapterPage() {
                     {user && selectedReference.userId && selectedReference.userId !== user.id && !selectedReference.hasUserVerified && !selectedReference.verified && (
                       <button
                         onClick={() => handleVerify(selectedReference.id, selectedReference.userId || '')}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                        className="btn-success flex items-center gap-2"
                       >
                         <span>👍</span>
                         <span>אמת</span>
                       </button>
                     )}
                     {selectedReference.hasUserVerified && (
-                      <span className="flex items-center gap-2 text-green-400 font-semibold">
+                      <span className="flex items-center gap-2 font-semibold" style={{ color: 'var(--deep-turquoise)' }}>
                         <span>✓</span>
                         <span>אומת על ידיך</span>
                       </span>
@@ -1193,7 +1193,7 @@ export default function ChapterPage() {
                     {user && (
                       <button
                         onClick={handleAddLinkedReference}
-                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                        className="btn-primary flex items-center gap-2"
                       >
                         <span>🔗</span>
                         <span>קשר רפרנס</span>
@@ -1203,7 +1203,7 @@ export default function ChapterPage() {
                       <>
                         <button
                           onClick={handleEditReference}
-                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                          className="btn-primary flex items-center gap-2"
                         >
                           <span>✏️</span>
                           <span>ערוך</span>
@@ -1211,7 +1211,7 @@ export default function ChapterPage() {
                         {selectedReference.userId === user.id && (
                           <button
                             onClick={handleDeleteReference}
-                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                            className="btn-danger flex items-center gap-2"
                           >
                             <span>🗑️</span>
                             <span>מחק</span>
@@ -1232,7 +1232,7 @@ export default function ChapterPage() {
                       <span className="text-zinc-400">
                         נוסף על ידי: <span className="text-white font-medium">{selectedReference.username}</span>
                         {selectedReference.userPoints !== undefined && selectedReference.userId && (
-                          <span className="text-blue-400 mr-1">({selectedReference.userPoints} נק')</span>
+                          <span className="mr-1" style={{ color: 'var(--deep-turquoise)' }}>({selectedReference.userPoints} נק')</span>
                         )}
                       </span>
                       {selectedReference.verificationCount !== undefined && selectedReference.verificationCount > 0 && (
@@ -1259,7 +1259,7 @@ export default function ChapterPage() {
                                     {formatTime(linkedRef.timestamp)}
                                   </div>
                                 </div>
-                                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" style={{ color: 'var(--deep-turquoise)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                 </svg>
                               </div>
@@ -1297,7 +1297,7 @@ export default function ChapterPage() {
                       value={editReferenceData.title}
                       onChange={(e) => setEditReferenceData({ ...editReferenceData, title: e.target.value })}
                       required
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="input-field"
                       placeholder="הכנס כותרת רפרנס"
                     />
                   </div>
@@ -1309,7 +1309,7 @@ export default function ChapterPage() {
                       value={editReferenceData.description}
                       onChange={(e) => setEditReferenceData({ ...editReferenceData, description: e.target.value })}
                       rows={4}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      className="input-field"
                       placeholder="הכנס תיאור רפרנס"
                     />
                   </div>
@@ -1321,14 +1321,14 @@ export default function ChapterPage() {
                       type="url"
                       value={editReferenceData.imageUrl}
                       onChange={(e) => setEditReferenceData({ ...editReferenceData, imageUrl: e.target.value })}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="input-field"
                       placeholder="https://example.com/image.jpg"
                     />
                   </div>
                   <div className="flex gap-3 pt-2">
                     <button
                       type="submit"
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+                      className="btn-primary flex-1"
                     >
                       שמור שינויים
                     </button>
@@ -1338,7 +1338,7 @@ export default function ChapterPage() {
                         setIsEditingReference(false);
                         setEditReferenceData({ title: "", description: "", imageUrl: "" });
                       }}
-                      className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+                      className="btn-secondary flex-1"
                     >
                       ביטול
                     </button>
@@ -1372,7 +1372,7 @@ export default function ChapterPage() {
                           {contributor.username || 'Unknown'}
                         </span>
                       </div>
-                      <span className="text-blue-400 font-semibold">
+                      <span className="font-semibold" style={{ color: 'var(--deep-turquoise)' }}>
                         {contributor.points || 0} נק'
                       </span>
                     </div>
@@ -1435,7 +1435,7 @@ export default function ChapterPage() {
                             <div className="flex items-center gap-2 text-xs text-zinc-400">
                               <span>נוסף על ידי: <span className="text-white font-medium">{ref.username}</span></span>
                               {ref.userPoints !== undefined && ref.userId && (
-                                <span className="text-blue-400">({ref.userPoints} נק')</span>
+                                <span style={{ color: 'var(--deep-turquoise)' }}>({ref.userPoints} נק')</span>
                               )}
                             </div>
                             {ref.linkedReferences && ref.linkedReferences.length > 0 && (
@@ -1452,7 +1452,7 @@ export default function ChapterPage() {
                                 e.stopPropagation();
                                 handleVerify(ref.id, ref.userId || '');
                               }}
-                              className="w-full flex items-center justify-center gap-2 bg-green-600/80 hover:bg-green-600 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors duration-200 text-sm"
+                              className="btn-success w-full flex items-center justify-center gap-2 text-sm"
                             >
                               <span>👍</span>
                               <span>אמת</span>
@@ -1461,7 +1461,7 @@ export default function ChapterPage() {
                         )}
                         {ref.hasUserVerified && (
                           <div className="px-4 pb-3">
-                            <div className="w-full flex items-center justify-center gap-2 bg-green-600/30 text-green-400 font-semibold px-3 py-1.5 rounded-lg text-sm">
+                            <div className="w-full flex items-center justify-center gap-2 wireframe-border px-3 py-1.5 text-sm" style={{ color: 'var(--deep-turquoise)', fontFamily: 'var(--font-mono)' }}>
                               <span>✓</span>
                               <span>אומת על ידיך</span>
                             </div>

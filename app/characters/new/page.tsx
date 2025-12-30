@@ -99,7 +99,7 @@ ${formData.first_appearance ? `## הופעה ראשונה\n${formData.first_appe
       <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
           <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>אתה צריך להתחבר כדי ליצור דמות</p>
-          <Link href="/" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
+          <Link href="/" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
             חזרה לדף הבית
           </Link>
         </div>

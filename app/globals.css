@@ -346,3 +346,259 @@ body > * {
 .glitch-text:hover {
   animation: glitch-text 0.3s;
 }
+
+/* ============================================
+   UNIFIED BUTTON SYSTEM - Use these classes only!
+   ============================================ */
+
+/* Primary Button - Main actions */
+.btn-primary {
+  background: transparent;
+  border: 1px solid var(--deep-turquoise);
+  color: var(--deep-turquoise);
+  padding: 12px 24px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 140, 158, 0.1);
+  transition: left 0.3s;
+}
+
+.btn-primary:hover::before {
+  left: 0;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 10px rgba(0, 140, 158, 0.5);
+  border-color: var(--deep-turquoise);
+  color: #FFFFFF;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Secondary Button - Secondary actions */
+.btn-secondary {
+  background: transparent;
+  border: 1px solid #FFFFFF;
+  color: #FFFFFF;
+  padding: 12px 24px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transition: left 0.3s;
+}
+
+.btn-secondary:hover::before {
+  left: 0;
+}
+
+.btn-secondary:hover {
+  box-shadow: 0 0 10px rgba(255, 107, 0, 0.5);
+  border-color: var(--retro-orange);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Danger Button - Delete actions */
+.btn-danger {
+  background: transparent;
+  border: 1px solid var(--crimson-red);
+  color: var(--crimson-red);
+  padding: 12px 24px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.btn-danger::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(214, 40, 40, 0.1);
+  transition: left 0.3s;
+}
+
+.btn-danger:hover::before {
+  left: 0;
+}
+
+.btn-danger:hover {
+  box-shadow: 0 0 10px rgba(214, 40, 40, 0.5);
+  border-color: var(--crimson-red);
+  color: #FFFFFF;
+}
+
+/* Success Button - Verify/Confirm actions */
+.btn-success {
+  background: transparent;
+  border: 1px solid var(--deep-turquoise);
+  color: var(--deep-turquoise);
+  padding: 12px 24px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.btn-success::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 140, 158, 0.1);
+  transition: left 0.3s;
+}
+
+.btn-success:hover::before {
+  left: 0;
+}
+
+.btn-success:hover {
+  box-shadow: 0 0 10px rgba(0, 140, 158, 0.5);
+  border-color: var(--deep-turquoise);
+  color: #FFFFFF;
+}
+
+/* Link Button - Text links */
+.btn-link {
+  color: var(--deep-turquoise);
+  font-family: var(--font-mono);
+  text-decoration: none;
+  transition: all 0.2s;
+  border-bottom: 1px solid transparent;
+}
+
+.btn-link:hover {
+  color: #FFFFFF;
+  border-bottom-color: var(--deep-turquoise);
+}
+
+/* Input Field - Unified input styling */
+.input-field {
+  width: 100%;
+  background: #000000;
+  border: 1px solid #FFFFFF;
+  color: #FFFFFF;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--deep-turquoise);
+  box-shadow: 0 0 10px rgba(0, 140, 158, 0.3);
+}
+
+.input-field::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.input-field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Textarea - Same as input */
+textarea.input-field {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Spinner - Unified loading spinner */
+.spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--deep-turquoise);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+.spinner-large {
+  width: 60px;
+  height: 60px;
+  border-width: 3px;
+}
+
+/* Avatar Button - User avatar */
+.btn-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #FFFFFF;
+  background: transparent;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: bold;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-avatar:hover {
+  border-color: var(--deep-turquoise);
+  box-shadow: 0 0 10px rgba(0, 140, 158, 0.5);
+}

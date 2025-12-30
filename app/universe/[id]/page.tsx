@@ -227,7 +227,7 @@ export default function UniverseItemPage() {
         return (
             <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
                 <div className="text-center">
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                    <div className="spinner spinner-large mb-4 mx-auto"></div>
                     <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>טוען פריט...</div>
                 </div>
             </div>
@@ -239,7 +239,7 @@ export default function UniverseItemPage() {
             <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
                 <div className="text-center">
                     <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>פריט לא נמצא</div>
-                    <Link href="/universe" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
+                    <Link href="/universe" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
                         חזרה ליקום
                     </Link>
                 </div>

@@ -540,7 +540,7 @@ export default function Home() {
           </div>
           {loading && initialLoad ? (
             <div className="text-center py-12 text-zinc-400">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <div className="spinner"></div>
             </div>
           ) : chapters.length === 0 ? (
             <div className="text-center py-12 text-zinc-400">
@@ -587,9 +587,6 @@ export default function Home() {
                         </svg>
                       </div>
                     )}
-                    <div className="absolute bottom-2 left-2 px-3 py-1 text-xs wireframe-border" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                      פרק {chapter.order_index + 1}
-                    </div>
                   </div>
                   <div className="p-6 relative z-10">
                     <h3 className="text-xl font-bold mb-2 transition-colors" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
@@ -628,7 +625,7 @@ export default function Home() {
           </div>
           {charactersLoading ? (
             <div className="text-center py-12 text-zinc-400">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <div className="spinner"></div>
             </div>
           ) : characters.length === 0 ? (
             <div className="text-center py-12 text-zinc-400">
@@ -696,7 +693,7 @@ export default function Home() {
           </div>
           {wikiItemsLoading ? (
             <div className="text-center py-12 text-zinc-400">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+              <div className="spinner"></div>
             </div>
           ) : wikiItems.length === 0 ? (
             <div className="text-center py-12 text-zinc-400">

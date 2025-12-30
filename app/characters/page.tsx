@@ -119,7 +119,7 @@ export default function CharactersPage() {
         {/* Characters Grid */}
         {loading && initialLoad ? (
           <div className="text-center py-20">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <div className="spinner spinner-large mx-auto"></div>
           </div>
         ) : characters.length === 0 ? (
           <div className="text-center py-20">
@@ -127,7 +127,7 @@ export default function CharactersPage() {
             {user && (
               <Link
                 href="/characters/new"
-                className="text-blue-400 hover:text-blue-300 underline"
+                className="btn-link"
               >
                 הוסף את הדמות הראשונה
               </Link>

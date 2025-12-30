@@ -162,7 +162,7 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center text-sm" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>
             <p>אין לך חשבון?</p>
-            <Link href="/contract" className="text-blue-400 hover:text-blue-300 underline">
+            <Link href="/contract" className="btn-link">
               הרשמה
             </Link>
           </div>

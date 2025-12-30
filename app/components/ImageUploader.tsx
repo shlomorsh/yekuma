@@ -111,7 +111,7 @@ export default function ImageUploader({ value, onChange, aspectRatio = 1 }: Imag
       <div
         className={`relative border-2 border-dashed rounded-lg transition-colors ${
           isDragging 
-            ? 'border-blue-500 bg-blue-500/10' 
+            ? 'border-[var(--deep-turquoise)] bg-[rgba(0,140,158,0.1)]' 
             : 'border-zinc-700 hover:border-zinc-600'
         }`}
         onDrop={handleDrop}
@@ -154,7 +154,7 @@ export default function ImageUploader({ value, onChange, aspectRatio = 1 }: Imag
           <div className="p-12 text-center">
             {isUploading ? (
               <div className="space-y-4">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <div className="spinner spinner-large mx-auto"></div>
                 <p className="text-zinc-400" style={{ fontFamily: 'var(--font-mono)' }}>מעלה תמונה...</p>
               </div>
             ) : (

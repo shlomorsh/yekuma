@@ -167,13 +167,13 @@ export default function UniversePage() {
 
                 {loading ? (
                     <div className="text-center py-20">
-                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                        <div className="spinner spinner-large mx-auto"></div>
                     </div>
                 ) : items.length === 0 ? (
                     <div className="text-center py-20">
                         <p className="text-zinc-400 text-xl mb-4">אין פריטים עדיין</p>
                         {user && (
-                            <Link href="/universe/new" className="text-blue-400 hover:text-blue-300 underline">
+                            <Link href="/universe/new" className="btn-link">
                                 הוסף את הפריט הראשון
                             </Link>
                         )}

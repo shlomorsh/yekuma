@@ -292,7 +292,7 @@ export default function CharacterPage() {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="spinner spinner-large mx-auto"></div>
         </div>
       </div>
     );
@@ -303,7 +303,7 @@ export default function CharacterPage() {
       <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
         <div className="text-center">
           <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>דמות לא נמצאה</p>
-          <Link href="/characters" className="text-blue-400 hover:text-blue-300" style={{ fontFamily: 'var(--font-mono)' }}>
+          <Link href="/characters" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
             חזרה לרשימת הדמויות
           </Link>
         </div>
