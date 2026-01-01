@@ -70,7 +70,7 @@ function renderText(text: string) {
             <div key={pIdx} className="mb-4 last:mb-0">
                 {lines.map((line, lIdx) => {
                     // Handle bold markdown (**text**)
-                    const parts: (string | JSX.Element)[] = [];
+                    const parts: (string | React.ReactElement)[] = [];
                     const boldRegex = /\*\*(.+?)\*\*/g;
                     const matches = Array.from(line.matchAll(boldRegex));
                     

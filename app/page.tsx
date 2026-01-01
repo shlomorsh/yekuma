@@ -17,9 +17,7 @@ interface Chapter {
 
 interface WikiStats {
   characters: number;
-  programs: number;
-  advertisements: number;
-  concepts: number;
+  universe_items: number;
 }
 
 interface Character {
@@ -38,14 +36,13 @@ interface WikiItem {
   image_url: string | null;
   view_count: number;
   verified: boolean;
-  item_type: 'program' | 'advertisement' | 'concept';
 }
 
 export default function Home() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [wikiItems, setWikiItems] = useState<WikiItem[]>([]);
-  const [wikiStats, setWikiStats] = useState<WikiStats>({ characters: 0, programs: 0, advertisements: 0, concepts: 0 });
+  const [wikiStats, setWikiStats] = useState<WikiStats>({ characters: 0, universe_items: 0 });
   const [loading, setLoading] = useState(true);
   const [charactersLoading, setCharactersLoading] = useState(true);
   const [wikiItemsLoading, setWikiItemsLoading] = useState(true);
@@ -290,18 +287,14 @@ export default function Home() {
 
         // Fetch wiki stats
         try {
-          const [charactersRes, programsRes, adsRes, conceptsRes] = await Promise.all([
+          const [charactersRes, universeItemsRes] = await Promise.all([
             supabase.from('characters').select('id', { count: 'exact', head: true }),
-            supabase.from('programs').select('id', { count: 'exact', head: true }),
-            supabase.from('advertisements').select('id', { count: 'exact', head: true }),
-            supabase.from('concepts').select('id', { count: 'exact', head: true }),
+            supabase.from('universe_items').select('id', { count: 'exact', head: true }),
           ]);
 
           setWikiStats({
             characters: charactersRes.count || 0,
-            programs: programsRes.count || 0,
-            advertisements: adsRes.count || 0,
-            concepts: conceptsRes.count || 0,
+            universe_items: universeItemsRes.count || 0,
           });
         } catch (err) {
           console.warn('Wiki stats not available:', err);
@@ -377,7 +370,7 @@ export default function Home() {
           );
 
           const result = await Promise.race([
-            supabase.from('universe_items').select('id, title, description, image_url, view_count, verified, item_type').order('created_at', { ascending: false }).limit(60),
+            supabase.from('universe_items').select('id, title, description, image_url, view_count, verified').order('created_at', { ascending: false }).limit(60),
             timeoutPromise
           ]) as any;
 
@@ -414,18 +407,6 @@ export default function Home() {
     }
   };
 
-  const getTypeInfo = (itemType: string) => {
-    switch (itemType) {
-      case 'program':
-        return { label: 'תכנית', color: 'text-[#26c6da]', bgColor: 'bg-[#26c6da]/20' };
-      case 'advertisement':
-        return { label: 'פרסומת', color: 'text-[#ec6d13]', bgColor: 'bg-[#ec6d13]/20' };
-      case 'concept':
-        return { label: 'מושג', color: 'text-[#ef4444]', bgColor: 'bg-[#ef4444]/20' };
-      default:
-        return { label: '', color: '', bgColor: '' };
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#120e0b] text-white overflow-hidden relative pb-24">
@@ -660,7 +641,7 @@ export default function Home() {
               </div>
               <div className="flex items-end gap-1">
                 <span className="text-2xl font-bold text-white tabular-nums">
-                  {wikiStats.characters + wikiStats.programs + wikiStats.advertisements + wikiStats.concepts}
+                  {wikiStats.characters + wikiStats.universe_items}
                 </span>
                 <span className="text-[10px] text-green-500 font-mono mb-1" dir="ltr">▲ 12%</span>
               </div>
@@ -716,50 +697,43 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {wikiItems.slice(0, 8).map((item) => {
-                const typeInfo = getTypeInfo(item.item_type);
-                
-                return (
-                  <Link
-                    key={item.id}
-                    href={`/universe/${item.id}`}
-                    className="surface-card group"
-                  >
-                    <div className="relative aspect-[4/3]">
-                      {item.image_url ? (
-                        <Image
-                          src={item.image_url}
-                          alt={item.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-[#1e1a17]">
-                          <span className={`material-symbols-outlined text-[32px] ${typeInfo.color} opacity-30`}>
-                            {item.item_type === 'program' ? 'tv' : item.item_type === 'advertisement' ? 'campaign' : 'lightbulb'}
-                          </span>
-                        </div>
-                      )}
-                      <div className={`absolute top-2 right-2 ${typeInfo.bgColor} backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-bold ${typeInfo.color}`}>
-                        {typeInfo.label}
+              {wikiItems.slice(0, 8).map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/universe/${item.id}`}
+                  className="surface-card group"
+                >
+                  <div className="relative aspect-[4/3]">
+                    {item.image_url ? (
+                      <Image
+                        src={item.image_url}
+                        alt={item.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-[#1e1a17]">
+                        <span className="material-symbols-outlined text-[32px] text-[#ec6d13] opacity-30">
+                          auto_awesome
+                        </span>
                       </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <h4 className="text-sm font-bold truncate text-white group-hover:text-[#ec6d13] transition-colors">
+                      {item.title}
+                    </h4>
+                    {item.description && (
+                      <p className="text-white/60 text-xs line-clamp-2 mt-1">
+                        {item.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2 text-[10px] text-white/40">
+                      <span>{item.view_count || 0} צפיות</span>
                     </div>
-                    <div className="p-3">
-                      <h4 className={`text-sm font-bold truncate ${typeInfo.color} group-hover:text-white transition-colors`}>
-                        {item.title}
-                      </h4>
-                      {item.description && (
-                        <p className="text-white/60 text-xs line-clamp-2 mt-1">
-                          {item.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2 text-[10px] text-white/40">
-                        <span>{item.view_count || 0} צפיות</span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </section>

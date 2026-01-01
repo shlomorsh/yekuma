@@ -33,13 +33,10 @@ export default function CharactersPage() {
   useEffect(() => {
     const fetchCharacters = async () => {
       try {
-        console.log('[Characters] Starting to fetch characters...');
         setLoading(true);
-        const startTime = Date.now();
         
         let data, error;
         try {
-          console.log('[Characters] Making Supabase request...');
           const result = await Promise.race([
             supabase
               .from('characters')
@@ -57,33 +54,21 @@ export default function CharactersPage() {
             data = result.data;
             error = null;
           }
-          
-          console.log('[Characters] Fetch completed in', Date.now() - startTime, 'ms');
         } catch (err: any) {
-          console.error('[Characters] Fetch exception:', err);
           error = err;
           data = null;
         }
 
-        console.log('[Characters] Fetch result:', { 
-          hasData: !!data, 
-          dataLength: data?.length, 
-          hasError: !!error,
-          error: error 
-        });
-
         if (error) {
-          console.error('[Characters] Error fetching characters:', error);
+          console.error('Error fetching characters:', error);
           setCharacters([]);
         } else {
-          console.log('[Characters] Setting characters:', data?.length || 0);
           setCharacters(data || []);
         }
       } catch (err) {
-        console.error('[Characters] Unexpected error:', err);
+        console.error('Unexpected error:', err);
         setCharacters([]);
       } finally {
-        console.log('[Characters] Finished fetching');
         setLoading(false);
         setInitialLoad(false);
       }
@@ -93,114 +78,112 @@ export default function CharactersPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <Link href="/" className="wireframe-border px-3 py-1 mb-4 inline-block" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-              ← חזרה לדף הבית
-            </Link>
-            <h1 className="text-5xl font-bold glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
-              דמויות
-            </h1>
-            <p className="mt-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>גלה את כל הדמויות ביקום</p>
-          </div>
-          {user && (
-            <Link
-              href="/characters/new"
-              className="control-panel-btn"
-            >
-              + הוסף דמות חדשה
-            </Link>
-          )}
+    <div className="min-h-screen bg-[#120e0b] text-white pb-24">
+      {/* Header */}
+      <div className="app-bar flex items-center justify-between">
+        <Link href="/" className="btn-icon">
+          <span className="material-symbols-outlined">arrow_forward</span>
+        </Link>
+        
+        <div className="flex flex-col items-center">
+          <h1 className="text-2xl font-extrabold tracking-tight uppercase">
+            <span className="text-[#ec6d13]">יקו</span>מות
+          </h1>
+          <div className="h-0.5 w-full bg-gradient-to-l from-transparent via-[#ec6d13] to-transparent opacity-50" />
         </div>
 
-        {/* Characters Grid */}
-        {loading && initialLoad ? (
-          <div className="text-center py-20">
-            <div className="spinner spinner-large mx-auto"></div>
-          </div>
-        ) : characters.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-zinc-400 text-xl mb-4">אין דמויות עדיין</p>
-            {user && (
-              <Link
-                href="/characters/new"
-                className="btn-link"
-              >
-                הוסף את הדמות הראשונה
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {characters.map((character) => (
-              <div key={character.id} className="character-sandwich relative">
-                {/* Background Layer */}
-                <div className="background-layer absolute inset-0 bg-black wireframe-border" />
-                
-                {/* Wireframe Logo Layer - Yekumot wireframe */}
-                <div className="wireframe-layer absolute inset-0 flex items-center justify-center opacity-30" style={{ zIndex: 2 }}>
-                  <svg width="100" height="100" viewBox="0 0 100 100" style={{ mixBlendMode: 'screen' }}>
-                    <rect x="20" y="20" width="60" height="60" fill="none" stroke="#FFFFFF" strokeWidth="1" />
-                    <line x1="30" y1="50" x2="70" y2="50" stroke="#FFFFFF" strokeWidth="1" />
-                    <line x1="50" y1="30" x2="50" y2="70" stroke="#FFFFFF" strokeWidth="1" />
-                  </svg>
-                </div>
-                
-                {/* Character Layer */}
-                <Link
-                  href={`/characters/${character.id}`}
-                  className="character-layer relative block wireframe-border overflow-hidden glitch-hover"
-                  style={{ background: 'transparent' }}
-                  data-title={character.title}
-                >
-                  <div className="relative aspect-square bg-black">
-                    {character.image_url ? (
-                      <Image
-                        src={character.image_url}
-                        alt={character.title}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <svg className="w-16 h-16" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
-                    )}
-                    {character.verified && (
-                      <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                        <span>⭐</span>
-                        <span>מאומת</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Text Layer */}
-                  <div className="text-layer p-4">
-                    <h3 className="text-lg font-bold mb-1 transition-colors glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
-                      {character.title}
-                    </h3>
-                    {character.description && (
-                      <p className="text-sm line-clamp-2 mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.7 }}>
-                        {character.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
-                      <span>{character.view_count || 0} צפיות</span>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            ))}
-          </div>
+        {user && (
+          <Link href="/characters/new" className="btn-icon">
+            <span className="material-symbols-outlined">add</span>
+          </Link>
         )}
       </div>
 
+      {/* Page Title */}
+      <div className="px-4 py-6">
+        <h2 className="text-3xl font-bold mb-2">דמויות</h2>
+        <p className="text-white/60 text-sm">גלה את כל הדמויות ביקום</p>
+      </div>
+
+      {/* Characters Grid */}
+      {loading && initialLoad ? (
+        <div className="flex justify-center py-20">
+          <div className="spinner spinner-large" />
+        </div>
+      ) : characters.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-white/40 text-xl mb-4">אין דמויות עדיין</p>
+          {user && (
+            <Link href="/characters/new" className="btn-primary">
+              הוסף את הדמות הראשונה
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 px-4 pb-8">
+          {characters.map((character) => (
+            <Link
+              key={character.id}
+              href={`/characters/${character.id}`}
+              className="character-card group"
+            >
+              <div className="relative aspect-square mb-3">
+                {character.image_url ? (
+                  <Image
+                    src={character.image_url}
+                    alt={character.title}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#1e1a17]">
+                    <span className="material-symbols-outlined text-[48px] text-[#ec6d13]/30">person</span>
+                  </div>
+                )}
+                {character.verified && (
+                  <div className="absolute top-2 right-2">
+                    <span className="material-symbols-outlined text-green-500 text-base">verified</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="px-1">
+                <h3 className="text-sm font-bold truncate mb-1">
+                  {character.title}
+                </h3>
+                {character.description && (
+                  <p className="text-xs text-white/60 line-clamp-2 mb-2">
+                    {character.description}
+                  </p>
+                )}
+                <div className="flex items-center gap-2 text-[10px] text-white/40">
+                  <span className="material-symbols-outlined text-[12px]">visibility</span>
+                  <span>{character.view_count || 0}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Bottom Navigation */}
+      <div className="bottom-nav">
+        <div className="flex items-center justify-around pb-2">
+          <Link href="/" className="bottom-nav-item">
+            <span className="material-symbols-outlined">home</span>
+            <span className="text-[10px] font-medium">בית</span>
+          </Link>
+          <button className="bottom-nav-item active relative">
+            <span className="material-symbols-outlined">menu_book</span>
+            <span className="text-[10px] font-bold">ויקי</span>
+          </button>
+          <Link href={user ? "#" : "/login"} className="bottom-nav-item">
+            <span className="material-symbols-outlined">person</span>
+            <span className="text-[10px] font-medium">פרופיל</span>
+          </Link>
+        </div>
+        <div className="h-4 w-full" />
+      </div>
     </div>
   );
 }
-

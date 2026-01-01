@@ -77,6 +77,7 @@ export default function ChapterPage() {
     description: "",
     imageUrl: ""
   });
+  const [muted, setMuted] = useState(false);
 
   // Check authentication status
   useEffect(() => {
@@ -892,26 +893,49 @@ export default function ChapterPage() {
             onMouseMove={handleVideoMouseMove}
           >
             {chapter.video_url ? (
-              <ReactPlayer
-                ref={playerRef}
-                url={chapter.video_url}
-                width="100%"
-                height="100%"
-                playing={playing}
-                onPlay={() => setPlaying(true)}
-                onPause={() => setPlaying(false)}
-                onReady={() => setIsReady(true)}
-                controls={!targetingMode}
-                className="aspect-video"
-                config={{
-                  youtube: {
-                    playerVars: {
-                      modestbranding: 1,
-                      rel: 0,
+              <>
+                <ReactPlayer
+                  ref={playerRef}
+                  src={chapter.video_url}
+                  width="100%"
+                  height="100%"
+                  playing={playing}
+                  muted={muted}
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  onReady={() => setIsReady(true)}
+                  onError={(error: any) => {
+                    console.error('ReactPlayer error:', error);
+                  }}
+                  controls={!targetingMode}
+                  className="aspect-video"
+                  config={{
+                    youtube: {
+                      playerVars: {
+                        modestbranding: 1,
+                        rel: 0,
+                        enablejsapi: 1,
+                        playsinline: 1,
+                        autoplay: 0,
+                      },
                     },
-                  },
-                }}
-              />
+                  }}
+                />
+                {!targetingMode && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMuted(!muted);
+                    }}
+                    className="absolute top-4 left-4 z-20 bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white rounded-lg p-2 transition-all"
+                    title={muted ? "הפעל קול" : "השתק"}
+                  >
+                    <span className="material-symbols-outlined">
+                      {muted ? 'volume_off' : 'volume_up'}
+                    </span>
+                  </button>
+                )}
+              </>
             ) : (
               <div className="aspect-video flex items-center justify-center">
                 <span className="material-symbols-outlined text-[64px] text-white/20">movie</span>

@@ -13,13 +13,7 @@ export default function NewUniverseItemPage() {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        item_type: 'program' as 'program' | 'advertisement' | 'concept',
-        channel: '', // ערוץ (לתכניות)
-        air_time: '', // זמן שידור (לתכניות)
-        host: '', // מנחה (לתכניות)
-        product: '', // מוצר (לפרסומות)
-        company: '', // חברה (לפרסומות)  
-        explanation: '', // הסבר (למושגים)
+        content: '',
         image_url: ''
     });
 
@@ -52,32 +46,12 @@ export default function NewUniverseItemPage() {
         try {
             setLoading(true);
 
-            // Build content from form fields based on type
-            let content = `# ${formData.title}\n\n`;
-
-            if (formData.description) {
-                content += `## תיאור\n${formData.description}\n\n`;
-            }
-
-            // Add type-specific fields
-            if (formData.item_type === 'program') {
-                if (formData.channel) content += `## ערוץ\n${formData.channel}\n\n`;
-                if (formData.air_time) content += `## זמן שידור\n${formData.air_time}\n\n`;
-                if (formData.host) content += `## מנחה\n${formData.host}\n\n`;
-            } else if (formData.item_type === 'advertisement') {
-                if (formData.product) content += `## מוצר\n${formData.product}\n\n`;
-                if (formData.company) content += `## חברה\n${formData.company}\n\n`;
-            } else if (formData.item_type === 'concept') {
-                if (formData.explanation) content += `## הסבר\n${formData.explanation}\n\n`;
-            }
-
             const { data, error } = await supabase
                 .from('universe_items')
                 .insert([{
                     title: formData.title,
                     description: formData.description || null,
-                    item_type: formData.item_type,
-                    content: content,
+                    content: formData.content || null,
                     image_url: formData.image_url,
                     created_by: user.id,
                     updated_by: user.id
@@ -97,7 +71,7 @@ export default function NewUniverseItemPage() {
             await supabase.rpc('award_wiki_points', {
                 user_id_param: user.id,
                 points_to_add: 10,
-                reason: `יצירת ${getTypeLabel(formData.item_type)} חדש`
+                reason: 'יצירת פריט יקום חדש'
             });
 
             alert('הפריט נוצר בהצלחה! קיבלת 10 נקודות.');
@@ -110,38 +84,12 @@ export default function NewUniverseItemPage() {
         }
     };
 
-    const getTypeLabel = (type: string) => {
-        switch (type) {
-            case 'program':
-                return 'תכנית';
-            case 'advertisement':
-                return 'פרסומת';
-            case 'concept':
-                return 'מושג';
-            default:
-                return type;
-        }
-    };
-
-    const getTypeColor = (type: string) => {
-        switch (type) {
-            case 'program':
-                return '#008C9E';
-            case 'advertisement':
-                return '#FF6B00';
-            case 'concept':
-                return '#D62828';
-            default:
-                return '#FFFFFF';
-        }
-    };
-
     if (!user) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
+            <div className="min-h-screen bg-[#120e0b] text-white flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>אתה צריך להתחבר כדי ליצור פריט</p>
-                    <Link href="/" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
+                    <p className="text-xl mb-4">אתה צריך להתחבר כדי ליצור פריט</p>
+                    <Link href="/" className="btn-link">
                         חזרה לדף הבית
                     </Link>
                 </div>
@@ -150,180 +98,62 @@ export default function NewUniverseItemPage() {
     }
 
     return (
-        <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
+        <div className="min-h-screen bg-[#120e0b] text-white" dir="rtl">
             <div className="container mx-auto px-4 py-8 max-w-4xl">
-                <Link href="/universe" className="wireframe-border px-3 py-1 mb-6 inline-block" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                    ← חזרה ליקום
+                <Link href="/universe" className="btn-icon mb-6 inline-flex">
+                    <span className="material-symbols-outlined">arrow_forward</span>
                 </Link>
 
-                <h1 className="text-4xl font-bold mb-8 glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
-                    הוסף פריט חדש ליקום
-                </h1>
+                <h1 className="text-4xl font-bold mb-8">הוסף פריט חדש ליקום</h1>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Type Selection */}
-                    <div className="wireframe-border p-6 bg-transparent">
-                        <label className="block text-sm font-medium mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                            סוג הפריט <span style={{ color: '#D62828' }}>*</span>
-                        </label>
-                        <div className="flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, item_type: 'program' })}
-                                className={`flex-1 wireframe-border px-4 py-3 transition-colors ${formData.item_type === 'program' ? 'bg-white/10' : ''}`}
-                                style={{ color: formData.item_type === 'program' ? getTypeColor('program') : '#FFFFFF', fontFamily: 'var(--font-mono)' }}
-                            >
-                                תכנית
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, item_type: 'advertisement' })}
-                                className={`flex-1 wireframe-border px-4 py-3 transition-colors ${formData.item_type === 'advertisement' ? 'bg-white/10' : ''}`}
-                                style={{ color: formData.item_type === 'advertisement' ? getTypeColor('advertisement') : '#FFFFFF', fontFamily: 'var(--font-mono)' }}
-                            >
-                                פרסומת
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setFormData({ ...formData, item_type: 'concept' })}
-                                className={`flex-1 wireframe-border px-4 py-3 transition-colors ${formData.item_type === 'concept' ? 'bg-white/10' : ''}`}
-                                style={{ color: formData.item_type === 'concept' ? getTypeColor('concept') : '#FFFFFF', fontFamily: 'var(--font-mono)' }}
-                            >
-                                מושג
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Title */}
-                    <div className="wireframe-border p-6 bg-transparent">
-                        <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                            כותרת <span style={{ color: '#D62828' }}>*</span>
+                    <div className="surface-card p-6">
+                        <label className="block text-sm font-bold mb-2">
+                            כותרת <span className="text-[#ef4444]">*</span>
                         </label>
                         <input
                             type="text"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             required
-                            className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none"
-                            style={{ fontFamily: 'var(--font-heebo)' }}
+                            className="input-field"
                             placeholder="שם הפריט"
                         />
                     </div>
 
                     {/* Description */}
-                    <div className="wireframe-border p-6 bg-transparent">
-                        <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+                    <div className="surface-card p-6">
+                        <label className="block text-sm font-bold mb-2">
                             תיאור קצר
                         </label>
                         <textarea
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             rows={3}
-                            className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none resize-none"
-                            style={{ fontFamily: 'var(--font-heebo)' }}
+                            className="input-field"
                             placeholder="תיאור קצר"
                         />
                     </div>
 
-                    {/* Type-specific fields */}
-                    {formData.item_type === 'program' && (
-                        <>
-                            <div className="wireframe-border p-6 bg-transparent">
-                                <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                                    ערוץ
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.channel}
-                                    onChange={(e) => setFormData({ ...formData, channel: e.target.value })}
-                                    className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none"
-                                    style={{ fontFamily: 'var(--font-heebo)' }}
-                                    placeholder="איזה ערוץ משדר את התכנית?"
-                                />
-                            </div>
-
-                            <div className="wireframe-border p-6 bg-transparent">
-                                <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                                    זמן שידור
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.air_time}
-                                    onChange={(e) => setFormData({ ...formData, air_time: e.target.value })}
-                                    className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none"
-                                    style={{ fontFamily: 'var(--font-heebo)' }}
-                                    placeholder="מתי התכנית משודרת?"
-                                />
-                            </div>
-
-                            <div className="wireframe-border p-6 bg-transparent">
-                                <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                                    מנחה
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.host}
-                                    onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-                                    className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none"
-                                    style={{ fontFamily: 'var(--font-heebo)' }}
-                                    placeholder="מי מנחה את התכנית?"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    {formData.item_type === 'advertisement' && (
-                        <>
-                            <div className="wireframe-border p-6 bg-transparent">
-                                <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                                    מוצר
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.product}
-                                    onChange={(e) => setFormData({ ...formData, product: e.target.value })}
-                                    className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none"
-                                    style={{ fontFamily: 'var(--font-heebo)' }}
-                                    placeholder="מה המוצר המפורסם?"
-                                />
-                            </div>
-
-                            <div className="wireframe-border p-6 bg-transparent">
-                                <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                                    חברה
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.company}
-                                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                                    className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none"
-                                    style={{ fontFamily: 'var(--font-heebo)' }}
-                                    placeholder="איזו חברה מפרסמת?"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    {formData.item_type === 'concept' && (
-                        <div className="wireframe-border p-6 bg-transparent">
-                            <label className="block text-sm font-medium mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                                הסבר
-                            </label>
-                            <textarea
-                                value={formData.explanation}
-                                onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
-                                rows={5}
-                                className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none resize-none"
-                                style={{ fontFamily: 'var(--font-heebo)' }}
-                                placeholder="מה המשמעות של המושג הזה?"
-                            />
-                        </div>
-                    )}
+                    {/* Content */}
+                    <div className="surface-card p-6">
+                        <label className="block text-sm font-bold mb-2">
+                            תוכן
+                        </label>
+                        <textarea
+                            value={formData.content}
+                            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                            rows={10}
+                            className="input-field font-mono text-sm"
+                            placeholder="תוכן מפורט (Markdown)"
+                        />
+                    </div>
 
                     {/* Image Upload */}
-                    <div className="wireframe-border p-6 bg-transparent">
-                        <label className="block text-sm font-medium mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                            תמונה <span style={{ color: '#D62828' }}>*</span>
+                    <div className="surface-card p-6">
+                        <label className="block text-sm font-bold mb-4">
+                            תמונה <span className="text-[#ef4444]">*</span>
                         </label>
                         <ImageUploader
                             value={formData.image_url}
@@ -337,14 +167,13 @@ export default function NewUniverseItemPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 control-panel-btn disabled:opacity-50"
+                            className="flex-1 btn-primary disabled:opacity-50"
                         >
-                            {loading ? 'יוצר...' : `צור ${getTypeLabel(formData.item_type)}`}
+                            {loading ? 'יוצר...' : 'צור פריט'}
                         </button>
                         <Link
                             href="/universe"
-                            className="flex-1 wireframe-border px-6 py-3 text-center text-white hover:bg-white/10 transition-colors"
-                            style={{ fontFamily: 'var(--font-mono)' }}
+                            className="flex-1 btn-secondary text-center"
                         >
                             ביטול
                         </Link>
