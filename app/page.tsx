@@ -69,8 +69,8 @@ export default function Home() {
     let timeoutId: NodeJS.Timeout | null = null;
 
     const scheduleNextPlay = () => {
-      // Random time between 30 seconds and 5 minutes (300000ms)
-      const randomDelay = Math.random() * (300000 - 30000) + 30000;
+      // Random time between 5 seconds and 30 seconds
+      const randomDelay = Math.random() * (30000 - 5000) + 5000;
       
       timeoutId = setTimeout(() => {
         audio.play().catch((err) => {
