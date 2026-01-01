@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Heebo, Assistant } from "next/font/google";
+import { Rubik, Heebo, Assistant } from "next/font/google";
 import "./globals.css";
 import GunCursor from "./components/GunCursor";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const rubik = Rubik({
+  variable: "--font-rubik",
+  subsets: ["hebrew", "latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 const heebo = Heebo({
@@ -26,8 +22,8 @@ const assistant = Assistant({
 });
 
 export const metadata: Metadata = {
-  title: "יקומה",
-  description: "יקומה - היקום של יקומות - מערכת רפרנסים לפרקי יקומות",
+  title: "יקומות",
+  description: "יקומות - מתעדים את היקום, אקורד אחד בכל פעם",
 };
 
 export default function RootLayout({
@@ -36,10 +32,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang="he" dir="rtl" className="dark">
+      <head>
+        {/* Material Symbols */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${heebo.variable} ${assistant.variable} antialiased`}
+        className={`${rubik.variable} ${heebo.variable} ${assistant.variable} antialiased`}
+        style={{ fontFamily: 'var(--font-rubik), var(--font-heebo), sans-serif' }}
       >
+        {/* Scanlines overlay for retro effect */}
+        <div className="scanlines" />
         <GunCursor />
         {children}
       </body>

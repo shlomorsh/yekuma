@@ -28,7 +28,6 @@ interface Reference {
   chapter_id: string;
 }
 
-// Parse markdown content to extract sections
 function parseContent(content: string | null) {
   if (!content) return {};
   
@@ -45,7 +44,6 @@ function parseContent(content: string | null) {
       currentSection = line.replace('## ', '').trim();
       currentContent = [];
     } else if (line.startsWith('# ')) {
-      // Skip main title
       continue;
     } else if (line.trim()) {
       currentContent.push(line.trim());
@@ -72,6 +70,7 @@ export default function CharacterPage() {
   const [showLinkRefModal, setShowLinkRefModal] = useState(false);
   const [availableRefs, setAvailableRefs] = useState<any[]>([]);
   const [loadingRefs, setLoadingRefs] = useState(false);
+  const [activeTab, setActiveTab] = useState<'biography' | 'references' | 'gallery'>('biography');
 
   useEffect(() => {
     const checkSession = async () => {
@@ -90,7 +89,6 @@ export default function CharacterPage() {
       try {
         setLoading(true);
         
-        // Fetch character
         const { data, error } = await supabase
           .from('characters')
           .select('*')
@@ -106,13 +104,11 @@ export default function CharacterPage() {
           setCharacter(data);
           setEditContent(data.content || '');
           
-          // Increment view count
           await supabase.rpc('increment_view_count', {
             entity_type_param: 'character',
             entity_id_param: characterId
           });
 
-          // Fetch connected references
           const { data: refConnections } = await supabase
             .from('reference_connections')
             .select('reference_id')
@@ -181,7 +177,6 @@ export default function CharacterPage() {
         return;
       }
 
-      // Refresh references
       const { data: refConnections } = await supabase
         .from('reference_connections')
         .select('reference_id')
@@ -225,14 +220,12 @@ export default function CharacterPage() {
         return;
       }
 
-      // Award points for editing
       await supabase.rpc('award_wiki_points', {
         user_id_param: user.id,
         points_to_add: 2,
         reason: 'עריכת דמות'
       });
 
-      // Save to edit history
       await supabase
         .from('edit_history')
         .insert([{
@@ -254,7 +247,6 @@ export default function CharacterPage() {
   const handleDeleteCharacter = async () => {
     if (!user || !character) return;
     
-    // Check if user is the creator
     if (character.created_by !== user.id) {
       alert("אתה יכול למחוק רק דמויות שיצרת");
       return;
@@ -269,7 +261,7 @@ export default function CharacterPage() {
         .from('characters')
         .delete()
         .eq('id', characterId)
-        .eq('created_by', user.id); // רק היוצר יכול למחוק
+        .eq('created_by', user.id);
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -288,22 +280,26 @@ export default function CharacterPage() {
     }
   };
 
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
-        <div className="text-center">
-          <div className="spinner spinner-large mx-auto"></div>
-        </div>
+      <div className="min-h-screen bg-[#120e0b] text-white flex items-center justify-center">
+        <div className="spinner spinner-large" />
       </div>
     );
   }
 
   if (!character) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
+      <div className="min-h-screen bg-[#120e0b] text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>דמות לא נמצאה</p>
-          <Link href="/characters" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
+          <p className="text-xl mb-4">דמות לא נמצאה</p>
+          <Link href="/characters" className="text-[#ec6d13] hover:underline">
             חזרה לרשימת הדמויות
           </Link>
         </div>
@@ -314,228 +310,344 @@ export default function CharacterPage() {
   const contentSections = parseContent(character.content);
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/characters" className="wireframe-border px-3 py-1 mb-4 inline-block" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-            ← חזרה לדמויות
-          </Link>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <h1 className="text-5xl font-bold mb-4 glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
-                {character.title}
-              </h1>
-              {character.description && (
-                <p className="text-xl mb-4" style={{ color: '#FFFFFF', opacity: 0.7 }}>{character.description}</p>
+    <div className="min-h-screen bg-[#120e0b] text-white relative overflow-x-hidden pb-24">
+      {/* Scanlines overlay */}
+      <div className="scanlines fixed inset-0 z-50 opacity-20 pointer-events-none" />
+      
+      {/* Navigation Bar */}
+      <nav className="app-bar flex items-center justify-between">
+        <Link href="/characters" className="btn-icon">
+          <span className="material-symbols-outlined">arrow_forward</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          {user && (
+            <button
+              onClick={() => {
+                setShowLinkRefModal(true);
+                fetchAvailableReferences();
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-[#ec6d13]/10 hover:bg-[#ec6d13]/20 border border-[#ec6d13]/30 rounded-full transition-all"
+            >
+              <span className="material-symbols-outlined text-[#ec6d13] text-lg">link</span>
+              <span className="text-[#ec6d13] text-sm font-bold">קשר</span>
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {/* Profile Header */}
+      <header className="relative px-4 pt-6 pb-2">
+        <div className="flex flex-col items-center">
+          {/* Image Container with glow effect */}
+          <div className="relative group cursor-pointer mb-6">
+            <div className="absolute -inset-0.5 bg-gradient-to-l from-[#ec6d13] to-orange-600 rounded-xl opacity-75 blur group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+            <div className="relative aspect-[3/4] w-40 rounded-xl bg-[#1e1a17] overflow-hidden border-2 border-[#ec6d13]/20">
+              {character.image_url ? (
+                <Image
+                  src={character.image_url}
+                  alt={character.title}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[64px] text-[#ec6d13]/30">person</span>
+                </div>
               )}
-              <div className="flex items-center gap-4 text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
-                <span>{character.view_count || 0} צפיות</span>
-                {character.verified && (
-                  <span className="flex items-center gap-1" style={{ color: '#FF6B00' }}>
-                    <span>⭐</span>
-                    <span>מאומת</span>
-                  </span>
-                )}
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#120e0b] via-transparent to-transparent opacity-60" />
             </div>
-            {user && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowLinkRefModal(true);
-                    fetchAvailableReferences();
-                  }}
-                  className="control-panel-btn"
-                >
-                  קשר רפרנס
-                </button>
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="control-panel-btn"
-                >
-                  {isEditing ? 'בטל עריכה' : 'ערוך'}
-                </button>
-                {character.created_by === user.id && (
-                  <button
-                    onClick={handleDeleteCharacter}
-                    className="btn-danger"
-                    style={{ fontFamily: 'var(--font-mono)' }}
-                  >
-                    🗑️ מחק
-                  </button>
-                )}
-              </div>
+            {/* Status Badge */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[#1e1a17] border border-green-500/50 text-green-400 px-3 py-1 rounded-full text-xs font-bold tracking-wider shadow-lg flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              חי
+            </div>
+          </div>
+          
+          <div className="text-center space-y-1 z-10">
+            <h1 className="text-3xl font-extrabold tracking-tight retro-shadow uppercase">
+              {character.title}
+            </h1>
+            {character.description && (
+              <p className="text-[#ec6d13] font-medium tracking-wide text-xs uppercase opacity-90">
+                {character.description}
+              </p>
             )}
+            <div className="flex items-center justify-center gap-2 text-white/50 text-sm mt-2">
+              <span className="material-symbols-outlined text-base">visibility</span>
+              <span>{character.view_count || 0} צפיות</span>
+              {character.verified && (
+                <>
+                  <span className="h-1 w-1 rounded-full bg-white/30" />
+                  <span className="material-symbols-outlined text-green-500 text-base">verified</span>
+                  <span className="text-green-500">מאומת</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+      {/* Tabs */}
+      <div className="sticky top-[69px] z-30 bg-[#120e0b] pt-2">
+        <div className="tabs px-4">
+          <button
+            onClick={() => setActiveTab('biography')}
+            className={`tab ${activeTab === 'biography' ? 'active' : ''}`}
+          >
+            ביוגרפיה
+          </button>
+          <button
+            onClick={() => setActiveTab('references')}
+            className={`tab ${activeTab === 'references' ? 'active' : ''}`}
+          >
+            אזכורים ({references.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('gallery')}
+            className={`tab ${activeTab === 'gallery' ? 'active' : ''}`}
+          >
+            גלריה
+          </button>
+        </div>
+        <div className="h-4 bg-gradient-to-b from-[#120e0b] to-transparent opacity-50 pointer-events-none" />
+      </div>
+
+      <main className="flex flex-col gap-6 px-4 py-4 min-h-screen">
+        {/* Stats Grid */}
+        <section className="grid grid-cols-2 gap-3">
+          <div className="stat-card">
+            <div className="absolute top-0 left-0 p-1 opacity-20">
+              <span className="material-symbols-outlined text-[#ec6d13] text-lg">fingerprint</span>
+            </div>
+            <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">סוג</p>
+            <p className="text-white font-medium text-sm">דמות</p>
+          </div>
+          <div className="stat-card">
+            <div className="absolute top-0 left-0 p-1 opacity-20">
+              <span className="material-symbols-outlined text-[#ec6d13] text-lg">movie</span>
+            </div>
+            <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">הופעות</p>
+            <p className="text-white font-medium text-sm">{references.length} רפרנסים</p>
+          </div>
+        </section>
+
+        {/* Biography Tab */}
+        {activeTab === 'biography' && (
+          <>
             {isEditing ? (
-              <div className="wireframe-border p-6 bg-transparent">
-                <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>עריכת תוכן</h2>
+              <section className="surface-card p-4">
+                <h2 className="text-lg font-bold mb-4">עריכת תוכן</h2>
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  rows={20}
-                  className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none resize-none"
-                  style={{ fontFamily: 'var(--font-mono)' }}
+                  rows={15}
+                  className="input-field font-mono text-sm"
                   placeholder="הכנס תוכן כאן..."
                 />
                 <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={handleSaveEdit}
-                    className="control-panel-btn"
-                  >
-                    שמור
-                  </button>
+                  <button onClick={handleSaveEdit} className="btn-primary flex-1">שמור</button>
                   <button
                     onClick={() => {
                       setIsEditing(false);
                       setEditContent(character.content || '');
                     }}
-                    className="wireframe-border px-6 py-2 bg-black text-white hover:bg-white/10 transition-colors"
-                    style={{ fontFamily: 'var(--font-mono)' }}
+                    className="btn-secondary flex-1"
                   >
                     ביטול
                   </button>
                 </div>
-              </div>
+              </section>
             ) : (
-              <div className="space-y-6">
-                {/* Image */}
-                {character.image_url && (
-                  <div className="wireframe-border p-4 bg-transparent">
-                    <div className="relative aspect-square w-full max-w-md mx-auto">
-                      <Image
-                        src={character.image_url}
-                        alt={character.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Content Sections */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="material-symbols-outlined text-[#ec6d13] text-lg">terminal</span>
+                  <h3 className="text-lg font-bold uppercase tracking-tight">יומן נתונים</h3>
+                </div>
+                
                 {Object.keys(contentSections).length > 0 ? (
-                  <div className="space-y-6">
+                  <div className="text-white/80 text-sm leading-relaxed space-y-4 bg-[#1e1a17]/30 p-4 rounded-lg border-r-2 border-[#ec6d13]/50">
                     {Object.entries(contentSections).map(([section, content]) => (
-                      <div key={section} className="wireframe-border p-6 bg-transparent">
-                        <h2 className="text-2xl font-bold mb-4 glitch-text" style={{ color: '#FF6B00', fontFamily: 'var(--font-heebo)' }}>
-                          {section}
-                        </h2>
-                        <div className="space-y-3" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
-                          {content.split('\n').map((line, i) => (
-                            <p key={i} style={{ opacity: 0.9, lineHeight: '1.8' }}>
-                              {line}
-                            </p>
-                          ))}
-                        </div>
+                      <div key={section}>
+                        <h4 className="font-bold text-[#ec6d13] mb-2">{section}</h4>
+                        {content.split('\n').map((line, i) => (
+                          <p key={i} className="mb-2">{line}</p>
+                        ))}
                       </div>
                     ))}
                   </div>
+                ) : character.description ? (
+                  <div className="text-white/80 text-sm leading-relaxed bg-[#1e1a17]/30 p-4 rounded-lg border-r-2 border-[#ec6d13]/50">
+                    <p>{character.description}</p>
+                  </div>
                 ) : (
-                  <div className="wireframe-border p-6 bg-transparent">
-                    <p style={{ color: '#FFFFFF', opacity: 0.7, fontFamily: 'var(--font-heebo)' }}>
-                      אין תוכן עדיין. {user && 'לחץ על "ערוך" כדי להוסיף תוכן.'}
-                    </p>
+                  <div className="text-white/50 text-sm p-4">
+                    אין תוכן עדיין. {user && 'לחץ על "ערוך" כדי להוסיף תוכן.'}
                   </div>
                 )}
-              </div>
-            )}
 
-            {/* Connected References */}
-            {references.length > 0 && (
-              <div className="wireframe-border p-6 bg-transparent">
-                <h2 className="text-2xl font-bold mb-4 glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
-                  רפרנסים קשורים
-                </h2>
-                <div className="space-y-2">
-                  {references.map((ref) => (
-                    <Link
-                      key={ref.id}
-                      href={`/chapter/${ref.chapter_id}?ref=${ref.id}&time=${ref.timestamp}`}
-                      target="_blank"
-                      className="block wireframe-border p-4 bg-transparent hover:bg-white/5 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium mb-1" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>{ref.title}</div>
-                          <div className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
-                            {Math.floor(ref.timestamp / 60)}:{(ref.timestamp % 60).toString().padStart(2, '0')}
-                          </div>
-                        </div>
-                        <svg className="w-5 h-5" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
+                {user && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="btn-secondary w-full"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                    ערוך תוכן
+                  </button>
+                )}
+              </section>
+            )}
+          </>
+        )}
+
+        {/* References Tab */}
+        {activeTab === 'references' && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#ec6d13] text-lg">verified</span>
+                <h3 className="text-lg font-bold uppercase tracking-tight">אזכורים מאומתים</h3>
+              </div>
+            </div>
+            
+            {references.length > 0 ? (
+              <div className="space-y-3">
+                {references.map((ref) => (
+                  <Link
+                    key={ref.id}
+                    href={`/chapter/${ref.chapter_id}?ref=${ref.id}&time=${ref.timestamp}`}
+                    target="_blank"
+                    className="reference-card block"
+                  >
+                    <div className="shrink-0 mt-1">
+                      <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white text-sm font-medium leading-snug">{ref.title}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="badge">{formatTime(ref.timestamp)}</span>
                       </div>
-                    </Link>
-                  ))}
-                </div>
+                    </div>
+                    <span className="material-symbols-outlined text-white/40 text-lg">chevron_left</span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-white/40">
+                אין רפרנסים מקושרים עדיין
               </div>
             )}
-          </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {character.image_url && (
-              <div className="wireframe-border p-4 bg-transparent">
-                <div className="relative aspect-square w-full">
+            {user && (
+              <button
+                onClick={() => {
+                  setShowLinkRefModal(true);
+                  fetchAvailableReferences();
+                }}
+                className="w-full py-3 text-xs font-bold text-white/50 uppercase tracking-widest hover:text-[#ec6d13] transition-colors border border-dashed border-white/20 hover:border-[#ec6d13]/50 rounded-lg"
+              >
+                + הוסף רפרנס
+              </button>
+            )}
+          </section>
+        )}
+
+        {/* Gallery Tab */}
+        {activeTab === 'gallery' && (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#ec6d13] text-lg">image</span>
+              <h3 className="text-lg font-bold uppercase tracking-tight">מאגר חזותי</h3>
+            </div>
+            
+            {character.image_url ? (
+              <div className="flex overflow-x-auto gap-3 pb-4 no-scrollbar -mx-4 px-4">
+                <div className="relative shrink-0 w-60 aspect-video rounded-lg overflow-hidden border border-white/10 group">
                   <Image
                     src={character.image_url}
                     alt={character.title}
                     fill
-                    className="object-cover"
+                    className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500"
                   />
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3">
+                    <p className="text-white text-xs font-bold truncate">תמונה ראשית</p>
+                  </div>
                 </div>
               </div>
+            ) : (
+              <div className="text-center py-8 text-white/40">
+                אין תמונות עדיין
+              </div>
             )}
-          </div>
-        </div>
-      </div>
+          </section>
+        )}
+      </main>
+
+      {/* FAB for editing */}
+      {user && (
+        <button
+          onClick={() => setIsEditing(!isEditing)}
+          className="fab"
+        >
+          <span className="material-symbols-outlined text-[28px]">
+            {isEditing ? 'close' : 'edit_note'}
+          </span>
+          {!isEditing && character.created_by === user.id && (
+            <span className="absolute -top-1 -left-1 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-[#ef4444] border-2 border-[#120e0b]" />
+            </span>
+          )}
+        </button>
+      )}
+
+      {/* Delete Button (only for creator) */}
+      {user && character.created_by === user.id && (
+        <button
+          onClick={handleDeleteCharacter}
+          className="fixed bottom-6 right-24 w-14 h-14 rounded-full bg-[#1e1a17] border border-[#ef4444]/30 text-[#ef4444] flex items-center justify-center hover:bg-[#ef4444]/10 transition-all z-30"
+        >
+          <span className="material-symbols-outlined text-[24px]">delete</span>
+        </button>
+      )}
 
       {/* Link Reference Modal */}
       {showLinkRefModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" style={{ fontFamily: 'var(--font-heebo)' }}>
-          <div className="wireframe-border p-6 bg-black w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e1a17] rounded-xl p-6 border border-white/10 w-full max-w-lg max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>בחר רפרנס לקישור</h2>
+              <h2 className="text-xl font-bold">בחר רפרנס לקישור</h2>
               <button
                 onClick={() => setShowLinkRefModal(false)}
-                className="text-white hover:text-red-400 transition-colors"
-                style={{ fontFamily: 'var(--font-mono)' }}
+                className="text-white/50 hover:text-white"
               >
-                ✕
+                <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             {loadingRefs ? (
-              <div className="text-center py-8" style={{ color: '#FFFFFF' }}>
-                טוען רפרנסים...
+              <div className="text-center py-8">
+                <div className="spinner mx-auto" />
               </div>
             ) : (
-              <div className="space-y-2">
-                {availableRefs.map((ref) => (
-                  <button
-                    key={ref.id}
-                    onClick={() => handleLinkReference(ref.id)}
-                    className="w-full text-right wireframe-border p-4 bg-transparent hover:bg-white/5 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium mb-1" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>{ref.title}</div>
-                        <div className="text-sm" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
-                          {Math.floor(ref.timestamp / 60)}:{(ref.timestamp % 60).toString().padStart(2, '0')}
+              <div className="overflow-y-auto flex-1 space-y-2">
+                {availableRefs.length === 0 ? (
+                  <div className="text-center py-8 text-white/40">אין רפרנסים זמינים</div>
+                ) : (
+                  availableRefs.map((ref) => (
+                    <button
+                      key={ref.id}
+                      onClick={() => handleLinkReference(ref.id)}
+                      className="w-full text-right bg-[#120e0b] hover:bg-white/5 border border-white/10 rounded-lg p-4 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium">{ref.title}</div>
+                          <div className="text-sm text-white/50 mt-1">{formatTime(ref.timestamp)}</div>
                         </div>
+                        <span className="material-symbols-outlined text-[#26c6da]">link</span>
                       </div>
-                      <svg className="w-5 h-5" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>

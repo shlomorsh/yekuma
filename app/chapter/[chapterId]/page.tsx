@@ -155,13 +155,10 @@ export default function ChapterPage() {
       if (!chapterId) return;
       
       try {
-        console.log('[Chapter] Starting to fetch chapter:', chapterId);
         setLoading(true);
-        const startTime = Date.now();
         
         let data, error;
         try {
-          console.log('[Chapter] Making Supabase request...');
           const result = await Promise.race([
             supabase
               .from('chapters')
@@ -180,43 +177,25 @@ export default function ChapterPage() {
             data = result.data;
             error = null;
           }
-          
-          console.log('[Chapter] Fetch completed in', Date.now() - startTime, 'ms');
         } catch (err: any) {
-          console.error('[Chapter] Fetch exception:', err);
           error = err;
           data = null;
         }
 
-        console.log('[Chapter] Fetch result:', { 
-          hasData: !!data, 
-          hasError: !!error,
-          error: error,
-          chapterId: chapterId
-        });
-
         if (error) {
-          console.error('[Chapter] Error fetching chapter:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            chapterId: chapterId
-          });
+          console.error('Error fetching chapter:', error);
           setLoading(false);
           return;
         }
 
         if (data) {
-          console.log('[Chapter] Setting chapter:', data.title);
           setChapter(data);
         } else {
-          console.log('[Chapter] No chapter data found');
           setLoading(false);
         }
       } catch (err) {
-        console.error('[Chapter] Unexpected error:', err);
+        console.error('Unexpected error:', err);
       } finally {
-        console.log('[Chapter] Finished fetching');
         setLoading(false);
       }
     };
@@ -236,7 +215,6 @@ export default function ChapterPage() {
       const ref = references.find(r => r.id === refId);
       if (ref) {
         setSelectedReference(ref);
-        // Seek to the timestamp
         if (playerRef.current) {
           const time = parseInt(timeParam);
           if (typeof playerRef.current.currentTime === "number") {
@@ -246,7 +224,6 @@ export default function ChapterPage() {
           }
           setPlaying(true);
         }
-        // Clean URL
         router.replace(`/chapter/${chapterId}`, { scroll: false });
       }
     }
@@ -262,7 +239,6 @@ export default function ChapterPage() {
         const { data: { session } } = await supabase.auth.getSession();
         const currentUserId = session?.user?.id;
 
-        // Fetch references for this chapter
         const { data: refsData, error: refsError } = await supabase
           .from('references')
           .select('id, timestamp, title, description, image_url, user_id, verified, verification_count, chapter_id')
@@ -270,40 +246,29 @@ export default function ChapterPage() {
           .order('timestamp', { ascending: true });
 
         if (refsError) {
-          // Check if it's a table/column doesn't exist error
           if (refsError.code === '42P01' || refsError.code === '42703' || refsError.message?.includes('does not exist')) {
-            console.warn('References table or chapter_id column does not exist yet. Please run setup-chapters-system.sql');
+            console.warn('References table or chapter_id column does not exist yet.');
             setReferences([]);
             setLoading(false);
             return;
           }
-          console.error('Error fetching references:', {
-            message: refsError.message,
-            code: refsError.code,
-            details: refsError.details,
-            hint: refsError.hint
-          });
+          console.error('Error fetching references:', refsError);
           setReferences([]);
           setLoading(false);
           return;
         }
 
-        // Handle case where no references exist (empty array is valid)
         if (refsData !== null) {
-          // Get unique user IDs
           const userIds = [...new Set(refsData.map((ref: any) => ref.user_id).filter(Boolean))];
           
-          // Fetch profiles
           let profilesMap: Record<string, any> = {};
           if (userIds.length > 0) {
-            const { data: profilesData, error: profilesError } = await supabase
+            const { data: profilesData } = await supabase
               .from('profiles')
               .select('id, username, points')
               .in('id', userIds);
             
-            if (profilesError) {
-              console.warn('Error fetching profiles:', profilesError);
-            } else if (profilesData) {
+            if (profilesData) {
               profilesMap = profilesData.reduce((acc: any, profile: any) => {
                 acc[profile.id] = profile;
                 return acc;
@@ -311,39 +276,34 @@ export default function ChapterPage() {
             }
           }
 
-          // Check verifications
           let userVerifications: string[] = [];
           if (currentUserId) {
-            const { data: verifications, error: verificationsError } = await supabase
+            const { data: verifications } = await supabase
               .from('verifications')
               .select('reference_id')
               .eq('user_id', currentUserId);
             
-            if (verificationsError) {
-              console.warn('Error fetching verifications:', verificationsError);
-            } else if (verifications) {
+            if (verifications) {
               userVerifications = verifications.map(v => v.reference_id);
             }
           }
 
-          // Fetch linked references for each reference
           const referencesWithLinks = await Promise.all(
             refsData.map(async (ref: any) => {
-              // Get linked references
-              const { data: links, error: linksError } = await supabase
+              const { data: links } = await supabase
                 .from('reference_links')
                 .select('target_reference_id')
                 .eq('source_reference_id', ref.id);
 
               let linkedRefs: Reference[] = [];
-              if (!linksError && links && links.length > 0) {
+              if (links && links.length > 0) {
                 const targetIds = links.map(l => l.target_reference_id);
-                const { data: linkedRefsData, error: linkedRefsError } = await supabase
+                const { data: linkedRefsData } = await supabase
                   .from('references')
                   .select('id, timestamp, title, description, image_url, user_id, verified, verification_count, chapter_id')
                   .in('id', targetIds);
 
-                if (!linkedRefsError && linkedRefsData) {
+                if (linkedRefsData) {
                   linkedRefs = linkedRefsData.map((lr: any) => {
                     const lrUserId = lr.user_id;
                     const lrProfile = lrUserId ? (profilesMap[lrUserId] || {}) : null;
@@ -387,7 +347,6 @@ export default function ChapterPage() {
 
           setReferences(referencesWithLinks);
         } else {
-          // No references found (empty array)
           setReferences([]);
         }
       } catch (err) {
@@ -446,8 +405,6 @@ export default function ChapterPage() {
       setShowLoginModal(true);
       return;
     }
-
-    // Enable targeting mode
     setTargetingMode(true);
     setPlaying(false);
   };
@@ -494,7 +451,6 @@ export default function ChapterPage() {
     try {
       setSaving(true);
       
-      // Check for existing references within +/- 3 seconds
       const { data: existingRefs } = await supabase
         .from('references')
         .select('id')
@@ -533,7 +489,6 @@ export default function ChapterPage() {
       }
 
       if (data) {
-        // Fetch profile
         const { data: profileData } = await supabase
           .from('profiles')
           .select('username, points')
@@ -616,7 +571,6 @@ export default function ChapterPage() {
         })
         .eq('id', referenceId);
 
-      // Refresh references
       window.location.reload();
     } catch (err) {
       console.error('Error verifying:', err);
@@ -650,14 +604,12 @@ export default function ChapterPage() {
           image_url: editReferenceData.imageUrl
         })
         .eq('id', selectedReference.id);
-        // כל משתמש מחובר יכול לערוך
 
       if (error) {
         alert('שגיאה בעריכה: ' + error.message);
         return;
       }
 
-      // Update local state
       const updatedReference = {
         ...selectedReference,
         title: editReferenceData.title,
@@ -688,7 +640,7 @@ export default function ChapterPage() {
         .from('references')
         .delete()
         .eq('id', selectedReference.id)
-        .eq('user_id', user.id); // רק היוצר יכול למחוק
+        .eq('user_id', user.id);
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -699,7 +651,6 @@ export default function ChapterPage() {
         return;
       }
 
-      // Remove from local state
       setReferences(references.filter(ref => ref.id !== selectedReference.id));
       setSelectedReference(null);
       alert('הרפרנס נמחק בהצלחה!');
@@ -714,14 +665,12 @@ export default function ChapterPage() {
     
     setLoadingLinkedRefs(true);
     try {
-      // Fetch all references from all chapters
       const { data: allRefs } = await supabase
         .from('references')
         .select('id, timestamp, title, description, image_url, user_id, verified, verification_count, chapter_id')
         .order('timestamp', { ascending: true });
 
       if (allRefs) {
-        // Get user profiles
         const userIds = [...new Set(allRefs.map((ref: any) => ref.user_id).filter(Boolean))];
         let profilesMap: Record<string, any> = {};
         if (userIds.length > 0) {
@@ -736,18 +685,6 @@ export default function ChapterPage() {
               return acc;
             }, {});
           }
-        }
-
-        // Get chapters for display
-        const { data: chaptersData } = await supabase
-          .from('chapters')
-          .select('id, title');
-
-        const chaptersMap: Record<string, string> = {};
-        if (chaptersData) {
-          chaptersData.forEach((ch: any) => {
-            chaptersMap[ch.id] = ch.title;
-          });
         }
 
         const mappedRefs: Reference[] = allRefs
@@ -793,7 +730,7 @@ export default function ChapterPage() {
         }]);
 
       if (error) {
-        if (error.code === '23505') { // Unique constraint violation
+        if (error.code === '23505') {
           alert("הרפרנס כבר מקושר");
         } else {
           alert("שגיאה בקישור רפרנס: " + error.message);
@@ -803,7 +740,6 @@ export default function ChapterPage() {
 
       alert("רפרנס מקושר בהצלחה!");
       setShowLinkedRefsModal(false);
-      // Refresh page to show linked references
       window.location.reload();
     } catch (err) {
       console.error('Error linking reference:', err);
@@ -812,12 +748,10 @@ export default function ChapterPage() {
   };
 
   const handleOpenLinkedReference = async (linkedRef: Reference) => {
-    // Open in new window/tab
     const url = `/chapter/${linkedRef.chapterId}?ref=${linkedRef.id}&time=${linkedRef.timestamp}`;
     window.open(url, '_blank');
   };
 
-  // Helper function to convert username to email (same as in contract/login pages)
   const usernameToEmail = (username: string) => {
     let cleanUsername = username.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
     if (!cleanUsername) {
@@ -855,7 +789,6 @@ export default function ChapterPage() {
         return;
       }
 
-      // Success - will close modal via useEffect
       setShowLoginModal(false);
     } catch (err) {
       console.error('Unexpected error:', err);
@@ -883,10 +816,10 @@ export default function ChapterPage() {
 
   if (!chapter && !loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
+      <div className="min-h-screen bg-[#120e0b] text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>פרק לא נמצא</p>
-          <Link href="/" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
+          <p className="text-xl mb-4">פרק לא נמצא</p>
+          <Link href="/" className="text-[#ec6d13] hover:underline">
             חזרה לדף הבית
           </Link>
         </div>
@@ -896,23 +829,10 @@ export default function ChapterPage() {
 
   if (loading && !chapter) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
+      <div className="min-h-screen bg-[#120e0b] text-white flex items-center justify-center">
         <div className="text-center">
           <div className="spinner spinner-large mb-4 mx-auto"></div>
-          <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>טוען פרק...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!loading && !chapter) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
-        <div className="text-center">
-          <div className="text-xl mb-4" style={{ color: '#FFFFFF' }}>פרק לא נמצא</div>
-          <Link href="/" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
-            חזרה לדף הבית
-          </Link>
+          <div className="text-xl">טוען פרק...</div>
         </div>
       </div>
     );
@@ -921,699 +841,557 @@ export default function ChapterPage() {
   if (!chapter) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="wireframe-border px-3 py-1 transition-colors"
-              style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}
-            >
-              ← חזרה לדף הבית
-            </Link>
-            <h1 className="text-2xl font-bold glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>{chapter.title}</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            {!authLoading && (
-              user ? (
-                <div className="flex items-center gap-3">
-                  {userProfile && (
-                    <span className="text-sm text-zinc-400">
-                      {userProfile.points || 0} נקודות
-                    </span>
-                  )}
-                  <div className="relative group">
-                    <button
-                      className="btn-avatar"
-                    >
-                      {email.charAt(0).toUpperCase()}
-                    </button>
-                    <div className="absolute left-0 top-12 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                      <div className="px-3 py-2 text-sm text-zinc-300 border-b border-zinc-700">
-                        {email}
-                      </div>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-right px-3 py-2 text-sm text-red-400 hover:bg-zinc-700 rounded mt-1"
-                      >
-                        התנתק
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowLoginModal(true)}
-                  className="btn-primary flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  התחבר
-                </button>
-              )
-            )}
-          </div>
+    <div className="min-h-screen bg-[#120e0b] text-white pb-24">
+      {/* Header */}
+      <header className="app-bar flex items-center justify-between">
+        <Link 
+          href="/" 
+          className="btn-icon"
+        >
+          <span className="material-symbols-outlined">arrow_forward</span>
+        </Link>
+        <div className="flex-1 text-center px-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#ec6d13]">עונה 1 • פרק</p>
+          <h1 className="text-base font-bold leading-tight tracking-tight truncate">{chapter.title}</h1>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Add Reference Button */}
-            <div className="flex justify-end">
+        {user ? (
+          <div className="relative group">
+            <button className="btn-icon">
+              {email.charAt(0).toUpperCase()}
+            </button>
+            <div className="absolute left-0 top-12 bg-[#1e1a17] border border-white/10 rounded-lg p-2 min-w-[180px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <div className="px-3 py-2 text-sm border-b border-white/10">
+                <div className="text-white/60 text-xs mb-1">מחובר כ:</div>
+                <div className="text-white truncate">{email}</div>
+                {userProfile && (
+                  <div className="text-[#ec6d13] text-sm mt-1 font-bold">{userProfile.points || 0} נקודות</div>
+                )}
+              </div>
               <button
-                onClick={handleAddReferenceClick}
-                disabled={!isReady || targetingMode}
-                className={`control-panel-btn ${targetingMode ? 'opacity-50' : ''}`}
+                onClick={handleLogout}
+                className="w-full text-right px-3 py-2 text-sm rounded mt-1 hover:bg-white/5 text-[#ef4444] transition-colors"
               >
-                {targetingMode ? 'מצב כיוון פעיל...' : 'הוסף רפרנס'}
+                התנתק
               </button>
             </div>
+          </div>
+        ) : (
+          <button onClick={() => setShowLoginModal(true)} className="btn-icon">
+            <span className="material-symbols-outlined">person</span>
+          </button>
+        )}
+      </header>
 
-            {/* Video Player */}
-            <div 
-              className="bg-black wireframe-border overflow-hidden relative"
-              style={{ cursor: targetingMode ? 'crosshair' : 'default' }}
-              onClick={handleVideoClick}
-              onMouseMove={handleVideoMouseMove}
-            >
-              {chapter.video_url ? (
-                <ReactPlayer
-                  ref={playerRef}
-                  url={chapter.video_url}
-                  width="100%"
-                  height="100%"
-                  playing={playing}
-                  onPlay={() => setPlaying(true)}
-                  onPause={() => setPlaying(false)}
-                  onReady={() => setIsReady(true)}
-                  controls={!targetingMode}
-                  className="aspect-video"
-                  config={{
-                    youtube: {
-                      playerVars: {
-                        modestbranding: 1,
-                        rel: 0,
-                      },
+      <main className="pb-24">
+        {/* Video Player Section */}
+        <section className="relative w-full bg-black">
+          <div 
+            className="aspect-video w-full bg-[#1e1a17] relative group overflow-hidden"
+            style={{ cursor: targetingMode ? 'crosshair' : 'default' }}
+            onClick={handleVideoClick}
+            onMouseMove={handleVideoMouseMove}
+          >
+            {chapter.video_url ? (
+              <ReactPlayer
+                ref={playerRef}
+                url={chapter.video_url}
+                width="100%"
+                height="100%"
+                playing={playing}
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
+                onReady={() => setIsReady(true)}
+                controls={!targetingMode}
+                className="aspect-video"
+                config={{
+                  youtube: {
+                    playerVars: {
+                      modestbranding: 1,
+                      rel: 0,
                     },
-                  }}
-                />
-              ) : (
-                <div className="aspect-video flex items-center justify-center">
-                  <p className="text-zinc-400">אין קישור וידאו זמין</p>
-                </div>
-              )}
-              
-              {/* Targeting Mode Overlay */}
-              {targetingMode && (
-                <>
-                  <div 
-                    className="crosshair"
-                    style={{
-                      left: `${crosshairPosition.x}px`,
-                      top: `${crosshairPosition.y}px`,
-                    }}
-                  />
-                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 wireframe-border px-4 py-2 bg-black" style={{ fontFamily: 'var(--font-mono)', color: '#FF6B00' }}>
-                    מצב כיוון - לחץ על הווידאו להוספת רפרנס
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTargetingMode(false);
-                    }}
-                    className="absolute top-4 right-4 wireframe-border px-3 py-1 bg-black hover:bg-white/10 transition-colors"
-                    style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}
-                  >
-                    ביטול
-                  </button>
-                </>
-              )}
-
-              {/* Reference Pins - Blinking Red Dots */}
-              {references.map((ref) => {
-                // Calculate pin position based on timestamp and video duration
-                // For now, we'll position them along the timeline
-                return (
-                  <div
-                    key={ref.id}
-                    className="blink-red absolute bottom-4"
-                    style={{
-                      left: `${(ref.timestamp / 600) * 100}%`, // Approximate position
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      transform: 'translateX(-50%)',
-                      zIndex: 10,
-                      pointerEvents: 'none',
-                    }}
-                    title={ref.title}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Add Reference Form */}
-            {showAddForm && user && (
-              <div className="terminal-style">
-                <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>הוסף רפרנס חדש</h2>
-                <form onSubmit={handleSaveReference} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      זמן (נלכד מהוידאו)
-                    </label>
-                    <input
-                      type="text"
-                      value={formatTime(formData.timestamp)}
-                      readOnly
-                      className="input-field"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      כותרת <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      required
-                      className="input-field"
-                      placeholder="הכנס כותרת רפרנס"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      תיאור
-                    </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={4}
-                      className="input-field"
-                      placeholder="הכנס תיאור רפרנס"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      כתובת תמונה (אופציונלי)
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.imageUrl}
-                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                      className="input-field"
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="btn-primary flex-1"
-                    >
-                      {saving ? 'שומר...' : 'שמור רפרנס'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({
-                          timestamp: 0,
-                          title: "",
-                          description: "",
-                          imageUrl: "https://via.placeholder.com/400x300/1f2937/9ca3af?text=רפרנס+חדש"
-                        });
-                        setShowAddForm(false);
-                        setTargetingMode(false);
-                      }}
-                      className="btn-secondary flex-1"
-                    >
-                      ביטול
-                    </button>
-                  </div>
-                </form>
+                  },
+                }}
+              />
+            ) : (
+              <div className="aspect-video flex items-center justify-center">
+                <span className="material-symbols-outlined text-[64px] text-white/20">movie</span>
               </div>
             )}
-
-            {/* Reference Details */}
-            {selectedReference && (
-              <div className={`bg-zinc-900/80 backdrop-blur-sm rounded-xl p-6 shadow-2xl border-2 ${
-                selectedReference.verified 
-                  ? "border-yellow-500/50 bg-yellow-950/10" 
-                  : "border-zinc-800"
-              }`}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-2xl font-bold text-white">פרטי רפרנס</h2>
-                    {selectedReference.verified && (
-                      <span className="flex items-center gap-1 text-yellow-400 font-semibold bg-yellow-950/30 px-3 py-1 rounded-lg border border-yellow-500/50">
-                        <span>⭐</span>
-                        <span>מאומת</span>
-                      </span>
-                    )}
+            
+            {/* Targeting Mode Overlay */}
+            {targetingMode && (
+              <>
+                <div 
+                  className="absolute w-10 h-10 border border-white rounded-full pointer-events-none z-50"
+                  style={{
+                    left: `${crosshairPosition.x - 20}px`,
+                    top: `${crosshairPosition.y - 20}px`,
+                  }}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-px h-full bg-white" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    {user && selectedReference.userId && selectedReference.userId !== user.id && !selectedReference.hasUserVerified && !selectedReference.verified && (
-                      <button
-                        onClick={() => handleVerify(selectedReference.id, selectedReference.userId || '')}
-                        className="btn-success flex items-center gap-2"
-                      >
-                        <span>👍</span>
-                        <span>אמת</span>
-                      </button>
-                    )}
-                    {selectedReference.hasUserVerified && (
-                      <span className="flex items-center gap-2 font-semibold" style={{ color: 'var(--deep-turquoise)' }}>
-                        <span>✓</span>
-                        <span>אומת על ידיך</span>
-                      </span>
-                    )}
-                    {user && (
-                      <button
-                        onClick={handleAddLinkedReference}
-                        className="btn-primary flex items-center gap-2"
-                      >
-                        <span>🔗</span>
-                        <span>קשר רפרנס</span>
-                      </button>
-                    )}
-                    {user && (
-                      <>
-                        <button
-                          onClick={handleEditReference}
-                          className="btn-primary flex items-center gap-2"
-                        >
-                          <span>✏️</span>
-                          <span>ערוך</span>
-                        </button>
-                        {selectedReference.userId === user.id && (
-                          <button
-                            onClick={handleDeleteReference}
-                            className="btn-danger flex items-center gap-2"
-                          >
-                            <span>🗑️</span>
-                            <span>מחק</span>
-                          </button>
-                        )}
-                      </>
-                    )}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-px w-full bg-white" />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="md:col-span-2">
-                    <h3 className="text-xl font-semibold mb-3 text-white">{selectedReference.title}</h3>
-                    <p className="text-zinc-300 leading-relaxed mb-4">{selectedReference.description}</p>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span className="font-mono bg-zinc-800 px-3 py-1 rounded-md text-zinc-400">
-                        {formatTime(selectedReference.timestamp)}
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-[#1e1a17] border border-[#ec6d13] px-4 py-2 rounded-lg text-[#ec6d13] text-sm font-bold">
+                  מצב כיוון - לחץ על הווידאו להוספת רפרנס
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTargetingMode(false);
+                  }}
+                  className="absolute top-4 right-4 btn-secondary text-sm"
+                >
+                  ביטול
+                </button>
+              </>
+            )}
+
+            {/* Reference markers on timeline */}
+            <div className="absolute bottom-0 left-0 right-0 h-6 z-10 pointer-events-none">
+              {references.map((ref) => (
+                <div
+                  key={ref.id}
+                  className="absolute bottom-2 w-3 h-3 bg-[#ec6d13] rounded-full animate-pulse"
+                  style={{
+                    left: `${Math.min((ref.timestamp / 600) * 100, 98)}%`,
+                    transform: 'translateX(-50%)',
+                  }}
+                  title={ref.title}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Video Meta */}
+        <section className="px-4 py-4 border-b border-white/10">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold leading-tight">{chapter.title}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-white/50 text-xs font-medium">{references.length} רפרנסים</span>
+              </div>
+            </div>
+            <button
+              onClick={handleAddReferenceClick}
+              disabled={!isReady || targetingMode}
+              className="btn-primary text-sm"
+            >
+              <span className="material-symbols-outlined text-lg">add</span>
+              הוסף
+            </button>
+          </div>
+          {chapter.description && (
+            <p className="mt-3 text-white/60 text-sm leading-relaxed line-clamp-2">
+              {chapter.description}
+            </p>
+          )}
+        </section>
+
+        {/* References Section */}
+        <section className="mt-2">
+          <div className="sticky top-[69px] z-30 bg-[#120e0b]/95 backdrop-blur-md pt-3 pb-2 px-4 border-b border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#ec6d13] text-base">dataset</span>
+                רפרנסים מפוענחים
+              </h3>
+              <span className="text-[10px] bg-[#1e1a17] text-white/50 px-2 py-0.5 rounded font-mono">שידור_חי</span>
+            </div>
+          </div>
+
+          <div className="px-4 py-4 space-y-3">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="spinner mx-auto" />
+              </div>
+            ) : references.length === 0 ? (
+              <div className="text-center py-8 text-white/40">
+                אין רפרנסים עדיין. הוסף אחד כדי להתחיל!
+              </div>
+            ) : (
+              references.map((ref) => (
+                <div
+                  key={ref.id}
+                  onClick={() => handleReferenceClick(ref)}
+                  className={`reference-card cursor-pointer ${selectedReference?.id === ref.id ? 'active' : ''}`}
+                >
+                  <button className="timestamp-btn">
+                    <span className="text-[10px] font-bold uppercase">קפוץ</span>
+                    <span>{formatTime(ref.timestamp)}</span>
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <h4 className="font-bold text-sm truncate">{ref.title}</h4>
+                      {ref.verified && (
+                        <span className="material-symbols-outlined text-green-500 text-base" title="מאומת">verified</span>
+                      )}
+                    </div>
+                    {ref.description && (
+                      <p className="text-white/50 text-xs mt-1 line-clamp-2">{ref.description}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="badge">
+                        <span className="material-symbols-outlined text-[10px]">person</span>
+                        {ref.username}
                       </span>
-                      <span className="text-zinc-400">
-                        נוסף על ידי: <span className="text-white font-medium">{selectedReference.username}</span>
-                        {selectedReference.userPoints !== undefined && selectedReference.userId && (
-                          <span className="mr-1" style={{ color: 'var(--deep-turquoise)' }}>({selectedReference.userPoints} נק')</span>
-                        )}
-                      </span>
-                      {selectedReference.verificationCount !== undefined && selectedReference.verificationCount > 0 && (
-                        <span className="text-zinc-400">
-                          {selectedReference.verificationCount} אימותים
+                      {ref.verificationCount !== undefined && ref.verificationCount > 0 && (
+                        <span className="text-[10px] text-white/40">
+                          {ref.verificationCount} אימותים
                         </span>
                       )}
                     </div>
-                    {/* Linked References */}
-                    {selectedReference.linkedReferences && selectedReference.linkedReferences.length > 0 && (
-                      <div className="mt-6">
-                        <h4 className="text-lg font-semibold mb-3 text-white">רפרנסים מקושרים:</h4>
-                        <div className="space-y-2">
-                          {selectedReference.linkedReferences.map((linkedRef) => (
-                            <button
-                              key={linkedRef.id}
-                              onClick={() => handleOpenLinkedReference(linkedRef)}
-                              className="w-full text-right bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700 rounded-lg p-3 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="text-white font-medium">{linkedRef.title}</div>
-                                  <div className="text-sm text-zinc-400 mt-1">
-                                    {formatTime(linkedRef.timestamp)}
-                                  </div>
-                                </div>
-                                <svg className="w-5 h-5" style={{ color: 'var(--deep-turquoise)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="md:col-span-1">
-                    <div className="relative aspect-video rounded-lg overflow-hidden border border-zinc-700">
-                      <Image
-                        src={selectedReference.imageUrl}
-                        alt={selectedReference.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Edit Reference Form */}
-            {isEditingReference && selectedReference && (
-              <div className="terminal-style">
-                <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>ערוך רפרנס</h2>
-                <form onSubmit={(e) => { e.preventDefault(); handleSaveEditReference(); }} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      כותרת <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={editReferenceData.title}
-                      onChange={(e) => setEditReferenceData({ ...editReferenceData, title: e.target.value })}
-                      required
-                      className="input-field"
-                      placeholder="הכנס כותרת רפרנס"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      תיאור
-                    </label>
-                    <textarea
-                      value={editReferenceData.description}
-                      onChange={(e) => setEditReferenceData({ ...editReferenceData, description: e.target.value })}
-                      rows={4}
-                      className="input-field"
-                      placeholder="הכנס תיאור רפרנס"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-300 mb-2">
-                      כתובת תמונה
-                    </label>
-                    <input
-                      type="url"
-                      value={editReferenceData.imageUrl}
-                      onChange={(e) => setEditReferenceData({ ...editReferenceData, imageUrl: e.target.value })}
-                      className="input-field"
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      type="submit"
-                      className="btn-primary flex-1"
-                    >
-                      שמור שינויים
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditingReference(false);
-                        setEditReferenceData({ title: "", description: "", imageUrl: "" });
-                      }}
-                      className="btn-secondary flex-1"
-                    >
-                      ביטול
-                    </button>
-                  </div>
-                </form>
-              </div>
+              ))
             )}
           </div>
+        </section>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Top Contributors */}
-            <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl p-6 shadow-2xl border border-zinc-800">
-              <h2 className="text-xl font-bold mb-4 text-white">5 התורמים המובילים</h2>
-              {topContributors.length === 0 ? (
-                <div className="text-center py-4 text-zinc-400 text-sm">
-                  אין תורמים עדיין
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {topContributors.map((contributor, index) => (
-                    <div
-                      key={contributor.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-zinc-700"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-zinc-400 font-bold w-6 text-center">
-                          {index + 1}
-                        </span>
-                        <span className="text-white font-medium text-sm">
-                          {contributor.username || 'Unknown'}
-                        </span>
-                      </div>
-                      <span className="font-semibold" style={{ color: 'var(--deep-turquoise)' }}>
-                        {contributor.points || 0} נק'
-                      </span>
+        {/* Top Contributors */}
+        <section className="mt-4 px-4 pb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="section-title">
+              <span className="material-symbols-outlined text-[#ec6d13] text-base">military_tech</span>
+              ארכיונאים מובילים
+            </h3>
+          </div>
+          <div className="flex gap-4 overflow-x-auto no-scrollbar">
+            {topContributors.map((contributor, index) => (
+              <div key={contributor.id} className="flex flex-col items-center gap-1 shrink-0 w-16">
+                <div className="relative">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
+                    index === 0 ? 'bg-[#ec6d13] text-white border-2 border-[#ec6d13]' : 'bg-[#1e1a17] text-white/70 border-2 border-white/20'
+                  }`}>
+                    {contributor.username?.charAt(0).toUpperCase() || '?'}
+                  </div>
+                  {index === 0 && (
+                    <div className="absolute -bottom-1 -right-1 bg-[#1e1a17] rounded-full p-0.5">
+                      <span className="material-symbols-outlined text-yellow-500 text-sm">star</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* References List */}
-            <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl p-6 shadow-2xl border border-zinc-800 sticky top-8">
-              <h2 className="text-xl font-bold mb-6 text-white">רפרנסים</h2>
-              {loading ? (
-                <div className="text-center py-8 text-zinc-400">
-                  טוען רפרנסים...
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
-                  {references.length === 0 ? (
-                    <div className="text-center py-8 text-zinc-400">
-                      אין רפרנסים עדיין. הוסף אחד כדי להתחיל!
-                    </div>
-                  ) : (
-                    references.map((ref) => (
-                      <div
-                        key={ref.id}
-                        className={`w-full rounded-lg transition-all duration-200 border-2 ${
-                          ref.verified
-                            ? "border-yellow-500/50 bg-yellow-950/20"
-                            : selectedReference?.id === ref.id
-                            ? "bg-blue-950/50 border-blue-500 shadow-lg shadow-blue-500/20"
-                            : "bg-zinc-800/50 border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800"
-                        }`}
-                      >
-                        <button
-                          onClick={() => handleReferenceClick(ref)}
-                          className="w-full text-right p-4"
-                        >
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2 flex-1">
-                                <span className={`font-semibold text-sm ${
-                                  selectedReference?.id === ref.id ? "text-blue-300" : "text-white"
-                                }`}>
-                                  {ref.title}
-                                </span>
-                                {ref.verified && (
-                                  <span className="text-yellow-400 text-xs" title="מאומת">
-                                    ⭐
-                                  </span>
-                                )}
-                              </div>
-                              <span className={`text-xs font-mono px-2 py-1 rounded ${
-                                selectedReference?.id === ref.id
-                                  ? "bg-blue-900/50 text-blue-300"
-                                  : "bg-zinc-700 text-zinc-400"
-                              }`}>
-                                {formatTime(ref.timestamp)}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-zinc-400">
-                              <span>נוסף על ידי: <span className="text-white font-medium">{ref.username}</span></span>
-                              {ref.userPoints !== undefined && ref.userId && (
-                                <span style={{ color: 'var(--deep-turquoise)' }}>({ref.userPoints} נק')</span>
-                              )}
-                            </div>
-                            {ref.linkedReferences && ref.linkedReferences.length > 0 && (
-                              <div className="text-xs text-purple-400 mt-1">
-                                🔗 {ref.linkedReferences.length} רפרנסים מקושרים
-                              </div>
-                            )}
-                          </div>
-                        </button>
-                        {user && ref.userId && ref.userId !== user.id && !ref.hasUserVerified && !ref.verified && (
-                          <div className="px-4 pb-3">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleVerify(ref.id, ref.userId || '');
-                              }}
-                              className="btn-success w-full flex items-center justify-center gap-2 text-sm"
-                            >
-                              <span>👍</span>
-                              <span>אמת</span>
-                            </button>
-                          </div>
-                        )}
-                        {ref.hasUserVerified && (
-                          <div className="px-4 pb-3">
-                            <div className="w-full flex items-center justify-center gap-2 wireframe-border px-3 py-1.5 text-sm" style={{ color: 'var(--deep-turquoise)', fontFamily: 'var(--font-mono)' }}>
-                              <span>✓</span>
-                              <span>אומת על ידיך</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))
                   )}
                 </div>
+                <span className={`text-[10px] font-medium truncate w-full text-center ${index === 0 ? 'text-white' : 'text-white/50'}`}>
+                  @{contributor.username}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {/* FAB - Add Reference */}
+      <button
+        onClick={handleAddReferenceClick}
+        disabled={!isReady || targetingMode}
+        className="fab"
+      >
+        <span className="material-symbols-outlined text-[28px]">add</span>
+      </button>
+
+      {/* Add Reference Form Modal */}
+      {showAddForm && user && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e1a17] rounded-xl p-6 border border-white/10 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">הוסף רפרנס חדש</h2>
+            <form onSubmit={handleSaveReference} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">זמן (נלכד מהוידאו)</label>
+                <input
+                  type="text"
+                  value={formatTime(formData.timestamp)}
+                  readOnly
+                  className="input-field bg-white/5"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">כותרת *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                  className="input-field"
+                  placeholder="הכנס כותרת רפרנס"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">תיאור</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  className="input-field"
+                  placeholder="הכנס תיאור רפרנס"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={saving} className="btn-primary flex-1">
+                  {saving ? 'שומר...' : 'שמור רפרנס'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({ timestamp: 0, title: "", description: "", imageUrl: "" });
+                    setShowAddForm(false);
+                  }}
+                  className="btn-secondary flex-1"
+                >
+                  ביטול
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reference Details Modal */}
+      {selectedReference && !showAddForm && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
+          <div className="bg-[#1e1a17] rounded-t-xl sm:rounded-xl p-6 border border-white/10 w-full sm:max-w-lg max-h-[80vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold">{selectedReference.title}</h2>
+                {selectedReference.verified && (
+                  <span className="material-symbols-outlined text-green-500">verified</span>
+                )}
+              </div>
+              <button
+                onClick={() => setSelectedReference(null)}
+                className="text-white/50 hover:text-white"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <p className="text-white/70 text-sm leading-relaxed mb-4">{selectedReference.description}</p>
+            
+            <div className="flex items-center gap-4 text-sm mb-4">
+              <span className="font-mono bg-[#120e0b] px-3 py-1 rounded text-white/60">
+                {formatTime(selectedReference.timestamp)}
+              </span>
+              <span className="text-white/50">
+                נוסף על ידי: <span className="text-white font-medium">{selectedReference.username}</span>
+              </span>
+            </div>
+
+            {/* Linked References */}
+            {selectedReference.linkedReferences && selectedReference.linkedReferences.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-bold mb-2 text-white/70">רפרנסים מקושרים:</h4>
+                <div className="space-y-2">
+                  {selectedReference.linkedReferences.map((linkedRef) => (
+                    <button
+                      key={linkedRef.id}
+                      onClick={() => handleOpenLinkedReference(linkedRef)}
+                      className="w-full text-right bg-[#120e0b] hover:bg-white/5 border border-white/10 rounded-lg p-3 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium text-sm">{linkedRef.title}</div>
+                          <div className="text-xs text-white/50 mt-1">{formatTime(linkedRef.timestamp)}</div>
+                        </div>
+                        <span className="material-symbols-outlined text-[#26c6da]">open_in_new</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2">
+              {user && selectedReference.userId && selectedReference.userId !== user.id && !selectedReference.hasUserVerified && !selectedReference.verified && (
+                <button
+                  onClick={() => handleVerify(selectedReference.id, selectedReference.userId || '')}
+                  className="btn-success flex-1 text-sm"
+                >
+                  <span className="material-symbols-outlined text-sm">thumb_up</span>
+                  אמת
+                </button>
+              )}
+              {user && (
+                <>
+                  <button onClick={handleAddLinkedReference} className="btn-secondary flex-1 text-sm">
+                    <span className="material-symbols-outlined text-sm">link</span>
+                    קשר
+                  </button>
+                  <button onClick={handleEditReference} className="btn-secondary flex-1 text-sm">
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                    ערוך
+                  </button>
+                  {selectedReference.userId === user.id && (
+                    <button onClick={handleDeleteReference} className="btn-danger flex-1 text-sm">
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                      מחק
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
         </div>
+      )}
 
-        {/* Login Modal */}
-        {showLoginModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-800 w-full max-w-md">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-white">התחברות</h2>
+      {/* Edit Reference Modal */}
+      {isEditingReference && selectedReference && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e1a17] rounded-xl p-6 border border-white/10 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">ערוך רפרנס</h2>
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveEditReference(); }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">כותרת *</label>
+                <input
+                  type="text"
+                  value={editReferenceData.title}
+                  onChange={(e) => setEditReferenceData({ ...editReferenceData, title: e.target.value })}
+                  required
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">תיאור</label>
+                <textarea
+                  value={editReferenceData.description}
+                  onChange={(e) => setEditReferenceData({ ...editReferenceData, description: e.target.value })}
+                  rows={3}
+                  className="input-field"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="submit" className="btn-primary flex-1">שמור שינויים</button>
                 <button
-                  onClick={() => {
-                    setShowLoginModal(false);
+                  type="button"
+                  onClick={() => setIsEditingReference(false)}
+                  className="btn-secondary flex-1"
+                >
+                  ביטול
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e1a17] rounded-xl p-6 border border-white/10 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">התחברות</h2>
+              <button
+                onClick={() => {
+                  setShowLoginModal(false);
+                  setLoginMessage("");
+                }}
+                className="text-white/50 hover:text-white"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">שם משתמש</label>
+                <input
+                  type="text"
+                  value={loginUsername}
+                  onChange={(e) => {
+                    setLoginUsername(e.target.value);
                     setLoginMessage("");
                   }}
-                  className="text-zinc-400 hover:text-white transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                  placeholder="הכנס את שם המשתמש שלך"
+                  className="input-field"
+                  required
+                />
               </div>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-2">
-                    שם משתמש
-                  </label>
-                  <input
-                    type="text"
-                    value={loginUsername}
-                    onChange={(e) => {
-                      setLoginUsername(e.target.value);
-                      setLoginMessage("");
-                    }}
-                    placeholder="הכנס את שם המשתמש שלך"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    autoComplete="username"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-2">
-                    סיסמה
-                  </label>
-                  <input
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => {
-                      setLoginPassword(e.target.value);
-                      setLoginMessage("");
-                    }}
-                    placeholder="הכנס את הסיסמה שלך"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    autoComplete="current-password"
-                  />
-                </div>
-                {loginMessage && (
-                  <p className={`text-sm ${loginMessage.includes("הצלח") ? "text-green-400" : "text-red-400"}`}>
-                    {loginMessage}
-                  </p>
-                )}
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={loginLoading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg transition-colors duration-200"
-                  >
-                    {loginLoading ? "מתחבר..." : "התחבר"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowLoginModal(false);
-                      setLoginMessage("");
-                    }}
-                    className="px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-white font-semibold rounded-lg transition-colors duration-200"
-                  >
-                    ביטול
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Linked References Modal */}
-        {showLinkedRefsModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-zinc-900 rounded-xl p-6 shadow-2xl border border-zinc-800 w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-white">בחר רפרנס לקישור</h2>
-                <button
-                  onClick={() => {
-                    setShowLinkedRefsModal(false);
-                    setAvailableReferences([]);
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">סיסמה</label>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => {
+                    setLoginPassword(e.target.value);
+                    setLoginMessage("");
                   }}
-                  className="text-zinc-400 hover:text-white transition-colors"
+                  placeholder="הכנס את הסיסמה שלך"
+                  className="input-field"
+                  required
+                />
+              </div>
+              {loginMessage && (
+                <p className={`text-sm ${loginMessage.includes("הצלח") ? "text-green-400" : "text-[#ef4444]"}`}>
+                  {loginMessage}
+                </p>
+              )}
+              <div className="flex gap-3">
+                <button type="submit" disabled={loginLoading} className="btn-primary flex-1">
+                  {loginLoading ? "מתחבר..." : "התחבר"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLoginModal(false)}
+                  className="btn-secondary flex-1"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  ביטול
                 </button>
               </div>
-              {loadingLinkedRefs ? (
-                <div className="text-center py-8 text-zinc-400">
-                  טוען רפרנסים...
-                </div>
-              ) : (
-                <div className="overflow-y-auto flex-1 space-y-2">
-                  {availableReferences.length === 0 ? (
-                    <div className="text-center py-8 text-zinc-400">
-                      אין רפרנסים זמינים
-                    </div>
-                  ) : (
-                    availableReferences.map((ref) => (
-                      <button
-                        key={ref.id}
-                        onClick={() => handleLinkReference(ref.id)}
-                        className="w-full text-right bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700 rounded-lg p-4 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-white font-medium">{ref.title}</div>
-                            <div className="text-sm text-zinc-400 mt-1">
-                              {formatTime(ref.timestamp)} • {ref.username}
-                            </div>
-                          </div>
-                          <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                          </svg>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Linked References Modal */}
+      {showLinkedRefsModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e1a17] rounded-xl p-6 border border-white/10 w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">בחר רפרנס לקישור</h2>
+              <button
+                onClick={() => {
+                  setShowLinkedRefsModal(false);
+                  setAvailableReferences([]);
+                }}
+                className="text-white/50 hover:text-white"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            {loadingLinkedRefs ? (
+              <div className="text-center py-8">
+                <div className="spinner mx-auto" />
+              </div>
+            ) : (
+              <div className="overflow-y-auto flex-1 space-y-2">
+                {availableReferences.length === 0 ? (
+                  <div className="text-center py-8 text-white/40">אין רפרנסים זמינים</div>
+                ) : (
+                  availableReferences.map((ref) => (
+                    <button
+                      key={ref.id}
+                      onClick={() => handleLinkReference(ref.id)}
+                      className="w-full text-right bg-[#120e0b] hover:bg-white/5 border border-white/10 rounded-lg p-4 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium">{ref.title}</div>
+                          <div className="text-sm text-white/50 mt-1">
+                            {formatTime(ref.timestamp)} • {ref.username}
+                          </div>
+                        </div>
+                        <span className="material-symbols-outlined text-[#26c6da]">link</span>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

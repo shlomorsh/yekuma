@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
@@ -43,7 +42,6 @@ interface WikiItem {
 }
 
 export default function Home() {
-  const router = useRouter();
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [wikiItems, setWikiItems] = useState<WikiItem[]>([]);
@@ -55,6 +53,54 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  
+  // Audio ref for random sound effects
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Random sound effect at random intervals
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Create audio element
+    const audio = new Audio('/sounds/windows-startup.wav');
+    audio.volume = 0.5; // Set volume to 50%
+    audioRef.current = audio;
+
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const scheduleNextPlay = () => {
+      // Random time between 30 seconds and 5 minutes (300000ms)
+      const randomDelay = Math.random() * (300000 - 30000) + 30000;
+      
+      timeoutId = setTimeout(() => {
+        audio.play().catch((err) => {
+          // Ignore errors (user might have blocked autoplay)
+          console.log('Audio play error (ignored):', err);
+          // Schedule next play even if this one failed
+          scheduleNextPlay();
+        });
+        
+        // Schedule next play after current one finishes
+        audio.onended = () => {
+          scheduleNextPlay();
+        };
+      }, randomDelay);
+    };
+
+    // Start scheduling first play
+    scheduleNextPlay();
+
+    // Cleanup on unmount
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   // Check authentication status and handle magic link
   useEffect(() => {
@@ -62,8 +108,6 @@ export default function Home() {
       try {
         setAuthLoading(true);
 
-        // Handle magic link callback from URL hash or query params
-        // Check both hash (direct) and query params (Google redirect)
         if (typeof window === 'undefined') {
           setAuthLoading(false);
           return;
@@ -72,14 +116,11 @@ export default function Home() {
         const hash = window.location.hash.substring(1);
         const search = window.location.search.substring(1);
 
-        // Try to get tokens from hash first, then from query params
         let hashParams = new URLSearchParams(hash);
         let searchParams = new URLSearchParams(search);
 
-        // Check if there's a redirect URL in query (from Google)
         const redirectUrl = searchParams.get('q') || searchParams.get('url');
         if (redirectUrl) {
-          // Extract tokens from the redirected URL
           try {
             const url = new URL(decodeURIComponent(redirectUrl));
             const token = url.searchParams.get('token');
@@ -87,7 +128,6 @@ export default function Home() {
             const redirectTo = url.searchParams.get('redirect_to');
 
             if (token && type === 'magiclink') {
-              // This is a magic link - redirect to Supabase verify endpoint
               const verifyUrl = `${url.origin}${url.pathname}?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirectTo || 'https://yekuma.vercel.app/')}`;
               window.location.href = verifyUrl;
               return;
@@ -102,20 +142,15 @@ export default function Home() {
         const errorParam = hashParams.get('error') || searchParams.get('error');
         const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
 
-        // If there's an error in the URL, show it
         if (errorParam) {
           console.error('Auth error:', errorParam, errorDescription);
           alert(`שגיאת התחברות: ${errorDescription || errorParam}`);
-          // Clear the hash/query
           window.history.replaceState(null, '', window.location.pathname);
           setAuthLoading(false);
           return;
         }
 
-        // If we have tokens in the URL, set the session
         if (accessToken || refreshToken) {
-          console.log('Magic link detected, processing...');
-
           try {
             const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
               access_token: accessToken || '',
@@ -126,10 +161,8 @@ export default function Home() {
               console.error('Error setting session:', sessionError);
               alert('שגיאה בהתחברות: ' + sessionError.message);
             } else if (sessionData?.session) {
-              console.log('Session set successfully');
               setUser(sessionData.session.user);
               await fetchUserProfile(sessionData.session.user.id);
-              // Show success message
               alert('התחברת בהצלחה!');
             }
           } catch (err) {
@@ -137,16 +170,13 @@ export default function Home() {
             alert('שגיאה בלתי צפויה בהתחברות');
           }
 
-          // Wait a moment for Supabase to process
           await new Promise(resolve => setTimeout(resolve, 1000));
 
-          // Clear URL hash/query after processing
           if (window.location.hash || window.location.search) {
             window.history.replaceState(null, '', window.location.pathname);
           }
         }
 
-        // Get the current session
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
@@ -170,15 +200,11 @@ export default function Home() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-
-      // Clear URL hash if present
       if (typeof window !== 'undefined' && window.location.hash) {
         window.history.replaceState(null, '', window.location.pathname);
       }
 
       if (session?.user) {
-        console.log('Session established for:', session.user.email);
         setUser(session.user);
         await fetchUserProfile(session.user.id);
       } else {
@@ -225,28 +251,10 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('[Home] Starting to fetch data...');
         setLoading(true);
-        // Fetch chapters directly
-        console.log('[Home] Fetching chapters from Supabase...');
-        const startTime = Date.now();
-
-        // Test connection first
-        try {
-          console.log('[Home] Testing Supabase connection...');
-          const testResult = await supabase.from('chapters').select('id').limit(1);
-          console.log('[Home] Connection test result:', {
-            hasData: !!testResult.data,
-            hasError: !!testResult.error,
-            error: testResult.error
-          });
-        } catch (testErr: any) {
-          console.error('[Home] Connection test failed:', testErr);
-        }
 
         let chaptersData, chaptersError;
         try {
-          console.log('[Home] Making Supabase request...');
           const result = await Promise.race([
             supabase
               .from('chapters')
@@ -260,63 +268,34 @@ export default function Home() {
           if (result && result.error) {
             chaptersError = result.error;
             chaptersData = null;
-            console.error('[Home] Supabase error:', result.error);
           } else if (result && result.data !== undefined) {
             chaptersData = result.data;
             chaptersError = null;
           } else {
-            console.error('[Home] Unexpected result format:', result);
             chaptersError = new Error('Unexpected result format');
             chaptersData = null;
           }
-
-          const elapsed = Date.now() - startTime;
-          console.log('[Home] Chapters fetch completed in', elapsed, 'ms', {
-            hasData: !!chaptersData,
-            dataLength: chaptersData?.length,
-            hasError: !!chaptersError,
-            error: chaptersError
-          });
         } catch (err: any) {
-          console.error('[Home] Chapters fetch exception:', err);
           chaptersError = err;
           chaptersData = null;
         }
 
-        console.log('[Home] Chapters fetch result:', {
-          hasData: !!chaptersData,
-          dataLength: chaptersData?.length,
-          hasError: !!chaptersError,
-          error: chaptersError
-        });
-
         if (chaptersError) {
-          console.error('[Home] Error fetching chapters:', chaptersError);
           setChapters([]);
         } else if (chaptersData && chaptersData.length > 0) {
-          console.log('[Home] Setting chapters:', chaptersData.length);
           setChapters(chaptersData);
         } else {
-          console.log('[Home] No chapters found');
           setChapters([]);
         }
 
-        // Fetch wiki stats (with error handling)
+        // Fetch wiki stats
         try {
-          console.log('[Home] Fetching wiki stats...');
           const [charactersRes, programsRes, adsRes, conceptsRes] = await Promise.all([
             supabase.from('characters').select('id', { count: 'exact', head: true }),
             supabase.from('programs').select('id', { count: 'exact', head: true }),
             supabase.from('advertisements').select('id', { count: 'exact', head: true }),
             supabase.from('concepts').select('id', { count: 'exact', head: true }),
           ]);
-
-          console.log('[Home] Wiki stats:', {
-            characters: charactersRes.count,
-            programs: programsRes.count,
-            advertisements: adsRes.count,
-            concepts: conceptsRes.count
-          });
 
           setWikiStats({
             characters: charactersRes.count || 0,
@@ -325,20 +304,17 @@ export default function Home() {
             concepts: conceptsRes.count || 0,
           });
         } catch (err) {
-          console.warn('[Home] Wiki stats not available:', err);
+          console.warn('Wiki stats not available:', err);
         }
       } catch (err) {
-        console.error('[Home] Unexpected error fetching chapters:', err);
+        console.error('Unexpected error fetching chapters:', err);
         setChapters([]);
       } finally {
-        console.log('[Home] Finished fetching, setting loading to false');
         setLoading(false);
         setInitialLoad(false);
       }
     };
 
-    // Fetch immediately - no delay needed
-    console.log('[Home] useEffect triggered, starting fetch...');
     fetchData();
   }, []);
 
@@ -346,13 +322,10 @@ export default function Home() {
   useEffect(() => {
     const fetchCharacters = async () => {
       try {
-        console.log('[Home] Fetching characters...');
         setCharactersLoading(true);
-        const startTime = Date.now();
 
         let data, error;
         try {
-          console.log('[Home] Making characters Supabase request...');
           const result = await Promise.race([
             supabase
               .from('characters')
@@ -371,30 +344,18 @@ export default function Home() {
             data = result.data;
             error = null;
           }
-
-          console.log('[Home] Characters fetch completed in', Date.now() - startTime, 'ms');
         } catch (err: any) {
-          console.error('[Home] Characters fetch exception:', err);
           error = err;
           data = null;
         }
 
-        console.log('[Home] Characters fetch result:', {
-          hasData: !!data,
-          dataLength: data?.length,
-          hasError: !!error,
-          error: error
-        });
-
         if (error) {
-          console.error('[Home] Error fetching characters:', error);
           setCharacters([]);
         } else {
-          console.log('[Home] Setting characters:', data?.length || 0);
           setCharacters(data || []);
         }
       } catch (err) {
-        console.error('[Home] Unexpected error fetching characters:', err);
+        console.error('Unexpected error fetching characters:', err);
         setCharacters([]);
       } finally {
         setCharactersLoading(false);
@@ -404,17 +365,13 @@ export default function Home() {
     fetchCharacters();
   }, []);
 
-  // Fetch and mix all wiki items
+  // Fetch wiki items
   useEffect(() => {
     const fetchWikiItems = async () => {
       try {
-        console.log('[Home] Fetching wiki items...');
         setWikiItemsLoading(true);
 
-        // Fetch all items from the unified universe_items table
-        const startTime = Date.now();
         try {
-          console.log('[Home] Making universe_items Supabase request...');
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Request timeout after 15 seconds')), 15000)
           );
@@ -424,22 +381,16 @@ export default function Home() {
             timeoutPromise
           ]) as any;
 
-          console.log('[Home] Universe items fetch completed in', Date.now() - startTime, 'ms');
-
           if (result.error) {
-            console.error('[Home] Universe items fetch error:', result.error);
             setWikiItems([]);
           } else {
-            // Shuffle the array for variety
             const shuffled = (result.data || []).sort(() => Math.random() - 0.5);
             setWikiItems(shuffled);
           }
         } catch (err: any) {
-          console.error('[Home] Universe items fetch exception:', err);
           setWikiItems([]);
         }
       } catch (err) {
-        console.error('Error fetching wiki items:', err);
         setWikiItems([]);
       } finally {
         setWikiItemsLoading(false);
@@ -463,221 +414,170 @@ export default function Home() {
     }
   };
 
+  const getTypeInfo = (itemType: string) => {
+    switch (itemType) {
+      case 'program':
+        return { label: 'תכנית', color: 'text-[#26c6da]', bgColor: 'bg-[#26c6da]/20' };
+      case 'advertisement':
+        return { label: 'פרסומת', color: 'text-[#ec6d13]', bgColor: 'bg-[#ec6d13]/20' };
+      case 'concept':
+        return { label: 'מושג', color: 'text-[#ef4444]', bgColor: 'bg-[#ef4444]/20' };
+      default:
+        return { label: '', color: '', bgColor: '' };
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative" style={{ fontFamily: 'var(--font-heebo)' }}>
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
-        {/* Hero Section */}
-        <div className="text-center mb-16 mt-12">
-          <h1
-            className="text-7xl md:text-9xl font-bold mb-4 glitch-text"
-            style={{
-              color: '#FFFFFF',
-              fontFamily: 'var(--font-heebo)',
-              textShadow: '0 0 20px rgba(255, 107, 0, 0.5)',
-            }}
-          >
-            יקומה
-          </h1>
-          <h2 className="text-xl md:text-2xl mb-8" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-            היקום של יקומות
-          </h2>
-          <p className="text-lg md:text-xl mb-8 leading-relaxed" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.9 }}>
-            ברוכים הבאים ל.. מה זה משנה בכלל???<br />
-            תשחיזו שופורניים<br />
-            תמירו דומבה למרכז השדה<br />
-            ויאללה
-          </p>
+    <div className="min-h-screen bg-[#120e0b] text-white overflow-hidden relative pb-24">
+      <div className="relative z-10">
+        {/* Top App Bar */}
+        <div className="app-bar flex items-center justify-between">
+          <button className="btn-icon">
+            <span className="material-symbols-outlined">menu</span>
+          </button>
+          
+          <div className="flex flex-col items-center">
+            <h1 className="text-2xl font-extrabold tracking-tight uppercase">
+              <span className="text-[#ec6d13]">יקו</span>מות
+            </h1>
+            <div className="h-0.5 w-full bg-gradient-to-l from-transparent via-[#ec6d13] to-transparent opacity-50" />
+          </div>
+
+          {user ? (
+            <div className="relative group">
+              <button className="btn-icon">
+                {user.email?.charAt(0).toUpperCase() || 'U'}
+              </button>
+              <div className="absolute left-0 top-12 bg-[#1e1a17] border border-white/10 rounded-lg p-2 min-w-[180px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <div className="px-3 py-2 text-sm border-b border-white/10">
+                  <div className="text-white/60 text-xs mb-1">מחובר כ:</div>
+                  <div className="text-white truncate">{user.email}</div>
+                  {userProfile && (
+                    <div className="text-[#ec6d13] text-sm mt-1 font-bold">{userProfile.points || 0} נקודות</div>
+                  )}
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-right px-3 py-2 text-sm rounded mt-1 hover:bg-white/5 text-[#ef4444] transition-colors"
+                >
+                  התנתק
+                </button>
+              </div>
+            </div>
+          ) : (
+            <Link href="/login" className="btn-icon">
+              <span className="material-symbols-outlined">person</span>
+            </Link>
+          )}
         </div>
 
-        {/* Header */}
-        <div className="mb-12 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {user ? (
-              <div className="flex items-center gap-3">
-                {userProfile && (
-                  <span className="text-sm px-3 py-1 wireframe-border" style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF' }}>
-                    {userProfile.points || 0} נקודות
-                  </span>
-                )}
-                <div className="relative group">
-                  <button
-                    className="w-10 h-10 wireframe-border flex items-center justify-center font-semibold hover:scale-110 transition-transform"
-                    style={{ fontFamily: 'var(--font-mono)', color: '#FFFFFF', background: 'transparent' }}
-                  >
-                    {user.email?.charAt(0).toUpperCase() || 'U'}
-                  </button>
-                  <div className="absolute left-0 top-12 bg-black wireframe-border p-2 min-w-[150px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                    <div className="px-3 py-2 text-sm border-b" style={{ color: '#FFFFFF', borderColor: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                      {user.email}
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-right px-3 py-2 text-sm rounded mt-1 hover:bg-white/10"
-                      style={{ color: '#D62828', fontFamily: 'var(--font-mono)' }}
-                    >
-                      התנתק
-                    </button>
+        {/* Hero Section - Featured Episode */}
+        {chapters.length > 0 && (
+          <div className="p-4">
+            <Link href={`/chapter/${chapters[0].id}`} className="featured-card block group">
+              <div className="relative aspect-[4/3] w-full">
+                {chapters[0].image_url ? (
+                  <Image
+                    src={chapters[0].image_url}
+                    alt={chapters[0].title}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-[#1e1a17] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[64px] text-[#ec6d13]/30">movie</span>
                   </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#120e0b] via-[#120e0b]/50 to-transparent" />
+                
+                {/* Live badge */}
+                <div className="absolute top-3 right-3">
+                  <span className="badge-live">שידור חי</span>
                 </div>
               </div>
-            ) : (
-              <Link
-                href="/login"
-                className="control-panel-btn"
-              >
-                התחבר
-              </Link>
-            )}
-          </div>
-        </div>
 
-        {/* Chapters Section - Control Panel Style */}
-        <section className="mb-20">
-          <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-4xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>פרקים</h2>
-            <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, #FFFFFF, transparent)' }} />
+              <div className="relative p-5 -mt-12">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[#26c6da] text-xs font-bold tracking-wider uppercase">פרק מומלץ</span>
+                  <span className="h-1 w-1 rounded-full bg-white/40" />
+                  <span className="text-white/60 text-xs">עונה 1</span>
+                </div>
+                
+                <h2 className="text-2xl font-bold leading-tight uppercase tracking-tight mb-2">
+                  {chapters[0].title}
+                </h2>
+                
+                {chapters[0].description && (
+                  <p className="text-white/70 text-sm line-clamp-2 mb-4">
+                    {chapters[0].description}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-3 mt-4">
+                  <button className="btn-primary flex-1">
+                    <span className="material-symbols-outlined">play_arrow</span>
+                    <span>צפייה</span>
+                  </button>
+                  <button className="btn-icon">
+                    <span className="material-symbols-outlined">add</span>
+                  </button>
+                </div>
+              </div>
+            </Link>
           </div>
+        )}
+
+        {/* Recent Episodes Section */}
+        <section className="mb-6">
+          <div className="flex items-center justify-between px-4 pb-3">
+            <h3 className="section-title">
+              <span className="section-dot" />
+              יומנים אחרונים
+            </h3>
+            <Link href="#" className="text-xs text-[#ec6d13] font-medium hover:text-orange-400">
+              הצג הכל
+            </Link>
+          </div>
+
           {loading && initialLoad ? (
-            <div className="text-center py-12 text-zinc-400">
-              <div className="spinner"></div>
+            <div className="flex justify-center py-12">
+              <div className="spinner" />
             </div>
           ) : chapters.length === 0 ? (
-            <div className="text-center py-12 text-zinc-400">
+            <div className="text-center py-12 text-white/40">
               <p>אין פרקים זמינים</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {chapters.map((chapter, index) => (
+            <div className="flex overflow-x-auto no-scrollbar pb-4 px-4 gap-4">
+              {chapters.slice(1).map((chapter, index) => (
                 <Link
                   key={chapter.id}
                   href={`/chapter/${chapter.id}`}
-                  prefetch={true}
-                  className="group relative wireframe-border overflow-hidden glitch-hover"
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                    background: 'transparent',
-                  }}
-                  data-title={chapter.title}
+                  className="min-w-[240px] flex flex-col gap-2 group cursor-pointer"
                 >
-                  <div className="relative aspect-video bg-black overflow-hidden">
+                  <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 bg-[#1e1a17]">
                     {chapter.image_url ? (
-                      <Image
-                        src={chapter.image_url}
-                        alt={chapter.title}
-                        fill
-                        className="object-cover"
-                        loading="lazy"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        unoptimized={chapter.image_url ? (chapter.image_url.includes('youtube.com') || chapter.image_url.includes('img.youtube.com')) : false}
-                        onError={(e) => {
-                          // Fallback to YouTube thumbnail if image fails
-                          if (!chapter.image_url) return;
-                          const videoId = chapter.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
-                          if (videoId && !chapter.image_url.includes(videoId)) {
-                            e.currentTarget.src = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center z-0">
-                        <svg className="w-16 h-16" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-6 relative z-10">
-                    <h3 className="text-xl font-bold mb-2 transition-colors" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
-                      {chapter.title}
-                    </h3>
-                    {chapter.description && (
-                      <p className="text-sm line-clamp-2 mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.7 }}>
-                        {chapter.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 text-sm transition-colors" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
-                      <span>לצפייה בפרק</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </svg>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Characters Section */}
-        <section className="mb-20">
-          <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-4xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>דמויות</h2>
-            <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, #FFFFFF, transparent)' }} />
-            <Link
-              href="/characters"
-              className="text-sm transition-colors wireframe-border px-3 py-1"
-              style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}
-            >
-              הצג הכל →
-            </Link>
-          </div>
-          {charactersLoading ? (
-            <div className="text-center py-12 text-zinc-400">
-              <div className="spinner"></div>
-            </div>
-          ) : characters.length === 0 ? (
-            <div className="text-center py-12 text-zinc-400">
-              <p>אין דמויות עדיין</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-              {characters.map((character) => (
-                <Link
-                  key={character.id}
-                  href={`/characters/${character.id}`}
-                  className="group character-sandwich wireframe-border overflow-hidden glitch-hover"
-                  style={{ background: 'transparent' }}
-                  data-title={character.title}
-                >
-                  <div className="relative aspect-square bg-black character-layer">
-                    {character.image_url ? (
-                      <Image
-                        src={character.image_url}
-                        alt={character.title}
-                        fill
-                        className="object-cover"
-                        style={{ mixBlendMode: 'normal' }}
-                        loading="lazy"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                        style={{ backgroundImage: `url('${chapter.image_url}')` }}
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <svg className="w-16 h-16" style={{ color: '#008C9E' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
+                        <span className="material-symbols-outlined text-[32px] text-[#ec6d13]/30">movie</span>
                       </div>
                     )}
-                    {character.verified && (
-                      <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                        <span>⭐</span>
-                        <span>מאומת</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4 text-layer">
-                    <h3 className="text-lg font-bold mb-1 transition-colors" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
-                      {character.title}
-                    </h3>
-                    {character.description && (
-                      <p className="text-sm line-clamp-2 mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.7 }}>
-                        {character.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 text-xs" style={{ color: '#008C9E', fontFamily: 'var(--font-mono)' }}>
-                      <span>{character.view_count || 0} צפיות</span>
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                    <div className="absolute bottom-2 left-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded border border-white/10 font-mono">
+                      24:00
                     </div>
+                  </div>
+                  <div className="flex flex-col px-1">
+                    <span className="text-white/50 text-[10px] uppercase font-bold tracking-wider">
+                      פרק {String(index + 2).padStart(2, '0')}
+                    </span>
+                    <h4 className="text-white text-sm font-semibold truncate">{chapter.title}</h4>
+                    <span className="text-[#26c6da] text-[10px] mt-0.5">חדש • לא נצפה</span>
                   </div>
                 </Link>
               ))}
@@ -685,111 +585,175 @@ export default function Home() {
           )}
         </section>
 
-        {/* Wiki Items Section */}
-        <section className="mb-20">
-          <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-4xl font-bold" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>היקום</h2>
-            <div className="flex-1 h-px" style={{ background: 'linear-gradient(to left, #FFFFFF, transparent)' }} />
+        {/* Characters Database Section */}
+        <section className="mb-6">
+          <div className="flex items-center justify-between px-4 pb-3">
+            <h3 className="section-title">
+              <span className="material-symbols-outlined text-[#26c6da] text-lg">database</span>
+              מסד נתונים
+            </h3>
+            <Link href="/characters" className="text-xs text-[#ec6d13] font-medium hover:text-orange-400">
+              הצג הכל
+            </Link>
           </div>
+
+          {charactersLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="spinner" />
+            </div>
+          ) : characters.length === 0 ? (
+            <div className="text-center py-8 text-white/40">
+              <p>אין דמויות עדיין</p>
+            </div>
+          ) : (
+            <div className="flex overflow-x-auto no-scrollbar px-4 gap-4">
+              {characters.slice(0, 6).map((character, index) => (
+                <Link
+                  key={character.id}
+                  href={`/characters/${character.id}`}
+                  className="flex flex-col items-center gap-2 min-w-[80px]"
+                >
+                  <div className={`avatar-circle ${index === 0 ? 'bg-gradient-to-tr from-[#ec6d13] to-transparent' : 'border border-white/15'}`}>
+                    <div className="avatar-circle-inner">
+                      {character.image_url ? (
+                        <Image
+                          src={character.image_url}
+                          alt={character.title}
+                          width={64}
+                          height={64}
+                          className={`w-full h-full object-cover ${index !== 0 ? 'grayscale opacity-80' : ''}`}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-[#1e1a17]">
+                          <span className="material-symbols-outlined text-[24px] text-[#ec6d13]/50">person</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <span className={`text-xs font-medium text-center ${index === 0 ? 'text-white' : 'text-white/70'}`}>
+                    {character.title}
+                  </span>
+                </Link>
+              ))}
+              
+              {/* Add New Character */}
+              <Link
+                href="/characters/new"
+                className="flex flex-col items-center gap-2 min-w-[80px]"
+              >
+                <div className="w-16 h-16 rounded-full bg-white/5 border border-dashed border-white/30 flex items-center justify-center text-white/50 hover:bg-white/10 hover:text-white transition-colors">
+                  <span className="material-symbols-outlined">add</span>
+                </div>
+                <span className="text-xs text-white/50 font-medium text-center">הוסף חדש</span>
+              </Link>
+            </div>
+          )}
+        </section>
+
+        {/* Stats Dashboard */}
+        <section className="px-4 mb-6">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="stat-card">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-[#26c6da] text-sm">verified</span>
+                <span className="text-[10px] text-white/60 uppercase font-bold tracking-wider">מקורות</span>
+              </div>
+              <div className="flex items-end gap-1">
+                <span className="text-2xl font-bold text-white tabular-nums">
+                  {wikiStats.characters + wikiStats.programs + wikiStats.advertisements + wikiStats.concepts}
+                </span>
+                <span className="text-[10px] text-green-500 font-mono mb-1" dir="ltr">▲ 12%</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-[#ec6d13] text-sm">edit_note</span>
+                <span className="text-[10px] text-white/60 uppercase font-bold tracking-wider">עריכות יומיות</span>
+              </div>
+              <div className="flex items-end gap-1">
+                <span className="text-2xl font-bold text-white tabular-nums">{wikiStats.characters}</span>
+                <span className="text-[10px] text-white/40 font-mono mb-1">חדש</span>
+              </div>
+            </div>
+
+            <div className="col-span-2 stat-card bg-gradient-to-l from-[#1e1a17] to-[#1e1a17]/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-white/60 uppercase font-bold tracking-wider block mb-1">דירוג קהילה</span>
+                  <span className="text-sm text-white font-medium">רמה 4: כורה מידע</span>
+                </div>
+                <div className="h-10 w-24 relative" dir="ltr">
+                  <div className="absolute inset-0 flex items-end justify-between gap-1 opacity-50">
+                    <div className="w-1 bg-[#26c6da] h-[40%]" />
+                    <div className="w-1 bg-[#26c6da] h-[60%]" />
+                    <div className="w-1 bg-[#26c6da] h-[30%]" />
+                    <div className="w-1 bg-[#26c6da] h-[80%]" />
+                    <div className="w-1 bg-[#ec6d13] h-[100%] animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Wiki Items Grid */}
+        <section className="mb-6 px-4">
+          <div className="flex items-center justify-between pb-3">
+            <h3 className="section-title">
+              <span className="material-symbols-outlined text-[#ec6d13] text-lg">public</span>
+              היקום
+            </h3>
+          </div>
+
           {wikiItemsLoading ? (
-            <div className="text-center py-12 text-zinc-400">
-              <div className="spinner"></div>
+            <div className="flex justify-center py-8">
+              <div className="spinner" />
             </div>
           ) : wikiItems.length === 0 ? (
-            <div className="text-center py-12 text-zinc-400">
+            <div className="text-center py-8 text-white/40">
               <p>אין פריטים עדיין</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {wikiItems.map((item) => {
-                const getTypeColors = () => {
-                  switch (item.item_type) {
-                    case 'program':
-                      return {
-                        accentColor: '#008C9E',
-                      };
-                    case 'advertisement':
-                      return {
-                        accentColor: '#FF6B00',
-                      };
-                    case 'concept':
-                      return {
-                        accentColor: '#D62828',
-                      };
-                  }
-                };
-
-                const getTypeLabel = () => {
-                  switch (item.item_type) {
-                    case 'program':
-                      return 'תכנית';
-                    case 'advertisement':
-                      return 'פרסומת';
-                    case 'concept':
-                      return 'מושג';
-                  }
-                };
-
-                const getHref = () => {
-                  return `/universe/${item.id}`;
-                };
-
-                const colors = getTypeColors();
-                const href = getHref();
-
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {wikiItems.slice(0, 8).map((item) => {
+                const typeInfo = getTypeInfo(item.item_type);
+                
                 return (
                   <Link
-                    key={`${item.item_type}-${item.id}`}
-                    href={href}
-                    className="wireframe-border overflow-hidden glitch-hover rgb-split"
-                    style={{ background: 'transparent' }}
-                    data-title={item.title}
+                    key={item.id}
+                    href={`/universe/${item.id}`}
+                    className="surface-card group"
                   >
-                    <div className="relative bg-black" style={{ height: '200px' }}>
+                    <div className="relative aspect-[4/3]">
                       {item.image_url ? (
                         <Image
                           src={item.image_url}
                           alt={item.title}
                           fill
-                          className="object-cover"
-                          loading="lazy"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <svg className="w-16 h-16" style={{ color: colors.accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {item.item_type === 'program' && (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                            )}
-                            {item.item_type === 'advertisement' && (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.533 9.5-3.5C19.532 4.5 22 8.5 22 13c0 1.76-.743 4.5-5.5 4.5s-7.5-2.5-7.5-2.5z" />
-                            )}
-                            {item.item_type === 'concept' && (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            )}
-                          </svg>
+                        <div className="absolute inset-0 flex items-center justify-center bg-[#1e1a17]">
+                          <span className={`material-symbols-outlined text-[32px] ${typeInfo.color} opacity-30`}>
+                            {item.item_type === 'program' ? 'tv' : item.item_type === 'advertisement' ? 'campaign' : 'lightbulb'}
+                          </span>
                         </div>
                       )}
-                      <div className="absolute top-2 right-2 px-2 py-1 text-xs wireframe-border" style={{ color: colors.accentColor, fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                        {getTypeLabel()}
+                      <div className={`absolute top-2 right-2 ${typeInfo.bgColor} backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-bold ${typeInfo.color}`}>
+                        {typeInfo.label}
                       </div>
-                      {item.verified && (
-                        <div className="absolute top-2 left-2 px-2 py-1 text-xs wireframe-border flex items-center gap-1" style={{ color: '#FF6B00', fontFamily: 'var(--font-mono)', background: '#000000' }}>
-                          <span>⭐</span>
-                          <span>מאומת</span>
-                        </div>
-                      )}
                     </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-bold mb-1 transition-colors glitch-text" style={{ color: colors.accentColor, fontFamily: 'var(--font-heebo)' }}>
+                    <div className="p-3">
+                      <h4 className={`text-sm font-bold truncate ${typeInfo.color} group-hover:text-white transition-colors`}>
                         {item.title}
-                      </h3>
+                      </h4>
                       {item.description && (
-                        <p className="text-sm line-clamp-3 mb-2" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)', opacity: 0.7 }}>
+                        <p className="text-white/60 text-xs line-clamp-2 mt-1">
                           {item.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-2 text-xs" style={{ color: colors.accentColor, fontFamily: 'var(--font-mono)' }}>
+                      <div className="flex items-center gap-2 mt-2 text-[10px] text-white/40">
                         <span>{item.view_count || 0} צפיות</span>
                       </div>
                     </div>
@@ -799,8 +763,30 @@ export default function Home() {
             </div>
           )}
         </section>
-      </div>
 
+        {/* Bottom Navigation */}
+        <div className="bottom-nav">
+          <div className="flex items-center justify-around pb-2">
+            <button className="bottom-nav-item active relative">
+              <span className="material-symbols-outlined">home</span>
+              <span className="text-[10px] font-bold">בית</span>
+            </button>
+            <Link href="#" className="bottom-nav-item">
+              <span className="material-symbols-outlined">movie</span>
+              <span className="text-[10px] font-medium">פרקים</span>
+            </Link>
+            <Link href="/characters" className="bottom-nav-item">
+              <span className="material-symbols-outlined">menu_book</span>
+              <span className="text-[10px] font-medium">ויקי</span>
+            </Link>
+            <Link href={user ? "#" : "/login"} className="bottom-nav-item">
+              <span className="material-symbols-outlined">person</span>
+              <span className="text-[10px] font-medium">פרופיל</span>
+            </Link>
+          </div>
+          <div className="h-4 w-full" />
+        </div>
+      </div>
     </div>
   );
 }
