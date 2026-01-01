@@ -452,73 +452,13 @@ export default function Home() {
           )}
         </div>
 
-        {/* Hero Section - Featured Episode */}
-        {chapters.length > 0 && (
-          <div className="p-4">
-            <Link href={`/chapter/${chapters[0].id}`} className="featured-card block group">
-              <div className="relative aspect-[4/3] w-full">
-                {chapters[0].image_url ? (
-                  <Image
-                    src={chapters[0].image_url}
-                    alt={chapters[0].title}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-[#1e1a17] flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[64px] text-[#ec6d13]/30">movie</span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#120e0b] via-[#120e0b]/50 to-transparent" />
-                
-                {/* Live badge */}
-                <div className="absolute top-3 right-3">
-                  <span className="badge-live">שידור חי</span>
-                </div>
-              </div>
-
-              <div className="relative p-5 -mt-12">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[#26c6da] text-xs font-bold tracking-wider uppercase">פרק מומלץ</span>
-                  <span className="h-1 w-1 rounded-full bg-white/40" />
-                  <span className="text-white/60 text-xs">עונה 1</span>
-                </div>
-                
-                <h2 className="text-2xl font-bold leading-tight uppercase tracking-tight mb-2">
-                  {chapters[0].title}
-                </h2>
-                
-                {chapters[0].description && (
-                  <p className="text-white/70 text-sm line-clamp-2 mb-4">
-                    {chapters[0].description}
-                  </p>
-                )}
-
-                <div className="flex items-center gap-3 mt-4">
-                  <button className="btn-primary flex-1">
-                    <span className="material-symbols-outlined">play_arrow</span>
-                    <span>צפייה</span>
-                  </button>
-                  <button className="btn-icon">
-                    <span className="material-symbols-outlined">add</span>
-                  </button>
-                </div>
-              </div>
-            </Link>
-          </div>
-        )}
-
-        {/* Recent Episodes Section */}
-        <section className="mb-6">
-          <div className="flex items-center justify-between px-4 pb-3">
+        {/* Chapters Grid Section */}
+        <section className="mb-6 px-4">
+          <div className="flex items-center justify-between pb-3">
             <h3 className="section-title">
               <span className="section-dot" />
-              יומנים אחרונים
+              כל הפרקים
             </h3>
-            <Link href="#" className="text-xs text-[#ec6d13] font-medium hover:text-orange-400">
-              הצג הכל
-            </Link>
           </div>
 
           {loading && initialLoad ? (
@@ -530,18 +470,20 @@ export default function Home() {
               <p>אין פרקים זמינים</p>
             </div>
           ) : (
-            <div className="flex overflow-x-auto no-scrollbar pb-4 px-4 gap-4">
-              {chapters.slice(1).map((chapter, index) => (
+            <div className="grid grid-cols-2 gap-4">
+              {chapters.map((chapter, index) => (
                 <Link
                   key={chapter.id}
                   href={`/chapter/${chapter.id}`}
-                  className="min-w-[240px] flex flex-col gap-2 group cursor-pointer"
+                  className="flex flex-col gap-2 group cursor-pointer"
                 >
                   <div className="relative aspect-video rounded-lg overflow-hidden border border-white/10 bg-[#1e1a17]">
                     {chapter.image_url ? (
-                      <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                        style={{ backgroundImage: `url('${chapter.image_url}')` }}
+                      <Image
+                        src={chapter.image_url}
+                        alt={chapter.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -549,16 +491,15 @@ export default function Home() {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                    <div className="absolute bottom-2 left-2 bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded border border-white/10 font-mono">
-                      24:00
-                    </div>
                   </div>
                   <div className="flex flex-col px-1">
                     <span className="text-white/50 text-[10px] uppercase font-bold tracking-wider">
-                      פרק {String(index + 2).padStart(2, '0')}
+                      פרק {String(index + 1).padStart(2, '0')}
                     </span>
-                    <h4 className="text-white text-sm font-semibold truncate">{chapter.title}</h4>
-                    <span className="text-[#26c6da] text-[10px] mt-0.5">חדש • לא נצפה</span>
+                    <h4 className="text-white text-sm font-semibold line-clamp-2">{chapter.title}</h4>
+                    {chapter.description && (
+                      <p className="text-white/60 text-xs line-clamp-2 mt-1">{chapter.description}</p>
+                    )}
                   </div>
                 </Link>
               ))}
@@ -701,37 +642,22 @@ export default function Home() {
                 <Link
                   key={item.id}
                   href={`/universe/${item.id}`}
-                  className="surface-card group"
+                  className="relative aspect-square rounded-lg overflow-hidden border border-white/10 bg-[#1e1a17] group"
                 >
-                  <div className="relative aspect-[4/3]">
-                    {item.image_url ? (
-                      <Image
-                        src={item.image_url}
-                        alt={item.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[#1e1a17]">
-                        <span className="material-symbols-outlined text-[32px] text-[#ec6d13] opacity-30">
-                          auto_awesome
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <h4 className="text-sm font-bold truncate text-white group-hover:text-[#ec6d13] transition-colors">
-                      {item.title}
-                    </h4>
-                    {item.description && (
-                      <p className="text-white/60 text-xs line-clamp-2 mt-1">
-                        {item.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-2 text-[10px] text-white/40">
-                      <span>{item.view_count || 0} צפיות</span>
+                  {item.image_url ? (
+                    <Image
+                      src={item.image_url}
+                      alt={item.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-[#1e1a17]">
+                      <span className="material-symbols-outlined text-[32px] text-[#ec6d13] opacity-30">
+                        auto_awesome
+                      </span>
                     </div>
-                  </div>
+                  )}
                 </Link>
               ))}
             </div>
@@ -745,15 +671,18 @@ export default function Home() {
               <span className="material-symbols-outlined">home</span>
               <span className="text-[10px] font-bold">בית</span>
             </button>
-            <Link href="#" className="bottom-nav-item">
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="bottom-nav-item"
+            >
               <span className="material-symbols-outlined">movie</span>
               <span className="text-[10px] font-medium">פרקים</span>
-            </Link>
+            </button>
             <Link href="/characters" className="bottom-nav-item">
               <span className="material-symbols-outlined">menu_book</span>
               <span className="text-[10px] font-medium">ויקי</span>
             </Link>
-            <Link href={user ? "#" : "/login"} className="bottom-nav-item">
+            <Link href="/login" className="bottom-nav-item">
               <span className="material-symbols-outlined">person</span>
               <span className="text-[10px] font-medium">פרופיל</span>
             </Link>
