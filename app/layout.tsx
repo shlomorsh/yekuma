@@ -22,8 +22,8 @@ const assistant = Assistant({
 });
 
 export const metadata: Metadata = {
-  title: "יקומות",
-  description: "יקומות - מתעדים את היקום, אקורד אחד בכל פעם",
+  title: "יקומה",
+  description: "יקומה - היקום של יקומות",
 };
 
 export default function RootLayout({

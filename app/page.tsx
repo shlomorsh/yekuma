@@ -452,6 +452,21 @@ export default function Home() {
           )}
         </div>
 
+        {/* Hero Section - Title and Intro */}
+        <section className="px-4 py-6 mb-6">
+          <div className="text-center mb-4">
+            <h2 className="text-3xl font-bold mb-2 uppercase tracking-tight">
+              <span className="text-[#ec6d13]">יקו</span>מה - היקום של יקומות
+            </h2>
+          </div>
+          <div className="text-center space-y-2 text-white/80 text-sm leading-relaxed">
+            <p>ברוכים הבאים ל.. מה זה משנה בכלל???</p>
+            <p>תשחיזו שופורניים</p>
+            <p>תמירו דומבה למרכז השדה</p>
+            <p>ויאללה</p>
+          </div>
+        </section>
+
         {/* Chapters Grid Section */}
         <section className="mb-6 px-4">
           <div className="flex items-center justify-between pb-3">
