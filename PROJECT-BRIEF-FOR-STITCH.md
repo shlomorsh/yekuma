@@ -165,7 +165,6 @@
 
 ---
 
-**קישור לפרויקט:** (להוסיף אם יש)
-**קישור ל-GitHub:** (להוסיף אם יש)
-**קישור לאתר פעיל:** (להוסיף אם יש)
+**קישור ל-GitHub:** https://github.com/shlomorsh/yekuma
+**קישור לאתר פעיל:** https://yekuma-9e1hyqfd3-shlomorshs-projects.vercel.app/
 

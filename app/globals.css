@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  /* New Stitch-inspired color palette */
-  --primary: #ec6d13;
-  --primary-dark: #d15b0b;
-  --secondary: #26c6da;
-  --accent: #ef4444;
-  --background-dark: #120e0b;
+  /* Retro monochrome color palette - inspired by 3D title cards */
+  --primary: #FFFFFF;
+  --primary-dark: #E0E0E0;
+  --secondary: #B0B0B0;
+  --accent: #808080;
+  --background-dark: #000000;
   --background-light: #f8f7f6;
-  --surface: #1e1a17;
-  --surface-dark: #2d231c;
+  --surface: #1a1a1a;
+  --surface-dark: #0d0d0d;
   --wireframe: rgba(255, 255, 255, 0.15);
   
   /* Legacy color mappings for compatibility */
@@ -119,25 +119,25 @@ body > * {
 }
 
 .surface-card:hover {
-  border-color: rgba(236, 109, 19, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Glow effects */
 .glow-primary {
-  box-shadow: 0 0 15px rgba(236, 109, 19, 0.5);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
 .glow-secondary {
-  box-shadow: 0 0 10px rgba(38, 198, 218, 0.3);
+  box-shadow: 0 0 10px rgba(176, 176, 176, 0.3);
 }
 
 .glow-accent {
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 10px rgba(128, 128, 128, 0.3);
 }
 
 /* Progress bar glow */
 .progress-glow {
-  box-shadow: 0 0 10px rgba(236, 109, 19, 0.8);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 /* ============================================
@@ -160,7 +160,7 @@ body > * {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 0 15px rgba(236, 109, 19, 0.3);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 .btn-primary:hover {
@@ -198,7 +198,7 @@ body > * {
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(236, 109, 19, 0.5);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .btn-secondary:disabled {
@@ -282,7 +282,7 @@ body > * {
 .input-field:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(236, 109, 19, 0.2);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
 }
 
 .input-field::placeholder {
@@ -314,7 +314,7 @@ textarea.input-field {
 }
 
 .episode-card:hover {
-  border-color: rgba(236, 109, 19, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-2px);
 }
 
@@ -337,7 +337,7 @@ textarea.input-field {
 }
 
 .character-card:hover {
-  border-color: rgba(236, 109, 19, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Character Avatar Circle */
@@ -381,11 +381,11 @@ textarea.input-field {
 }
 
 .reference-card:hover {
-  border-color: rgba(236, 109, 19, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .reference-card.active {
-  border-color: rgba(236, 109, 19, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .reference-card.active::before {
@@ -409,9 +409,9 @@ textarea.input-field {
   width: 48px;
   height: 48px;
   border-radius: 0.5rem;
-  background: rgba(236, 109, 19, 0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--primary);
-  border: 1px solid rgba(236, 109, 19, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 700;
@@ -463,17 +463,17 @@ textarea.input-field {
 }
 
 .badge-primary {
-  background: rgba(236, 109, 19, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   color: var(--primary);
 }
 
 .badge-secondary {
-  background: rgba(38, 198, 218, 0.2);
+  background: rgba(176, 176, 176, 0.15);
   color: var(--secondary);
 }
 
 .badge-accent {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(128, 128, 128, 0.15);
   color: var(--accent);
 }
 
@@ -652,7 +652,7 @@ textarea.input-field {
 
 /* Text gradient */
 .text-gradient {
-  background: linear-gradient(135deg, var(--primary), #ff9a56);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -660,7 +660,7 @@ textarea.input-field {
 
 /* Retro text shadow */
 .retro-shadow {
-  text-shadow: 2px 2px 0px rgba(236, 109, 19, 0.3);
+  text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.2);
 }
 
 /* Hover glitch effect for text */
@@ -715,7 +715,7 @@ textarea.input-field {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 20px rgba(236, 109, 19, 0.5);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
   transition: all 0.3s ease;
   cursor: pointer;
   z-index: 30;
@@ -761,6 +761,75 @@ textarea.input-field {
 .tab.active {
   color: var(--primary);
   border-bottom-color: var(--primary);
+}
+
+/* ============================================
+   3D TEXT EFFECT - Retro title card style
+   ============================================ */
+.text-3d {
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: white;
+  text-shadow: 
+    0 0 0 white,
+    0.5px 0.5px 0 rgba(255, 255, 255, 0.9),
+    1px 1px 0 rgba(255, 255, 255, 0.8),
+    1.5px 1.5px 0 rgba(255, 255, 255, 0.7),
+    2px 2px 0 rgba(255, 255, 255, 0.6),
+    2.5px 2.5px 0 rgba(255, 255, 255, 0.5),
+    3px 3px 0 rgba(255, 255, 255, 0.4),
+    3.5px 3.5px 0 rgba(255, 255, 255, 0.3),
+    4px 4px 0 rgba(255, 255, 255, 0.2),
+    4.5px 4.5px 0 rgba(255, 255, 255, 0.1),
+    5px 5px 3px rgba(0, 0, 0, 0.5),
+    0 0 15px rgba(255, 255, 255, 0.15);
+  position: relative;
+  display: inline-block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.text-3d::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 1px,
+    rgba(255, 255, 255, 0.05) 1px,
+    rgba(255, 255, 255, 0.05) 2px
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.6;
+}
+
+.text-3d::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(255, 255, 255, 0.03) 1px,
+    rgba(255, 255, 255, 0.03) 2px
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.4;
 }
 
 /* ============================================
@@ -811,7 +880,7 @@ textarea.input-field {
 
 .control-panel-btn:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: var(--primary);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .terminal-style {
@@ -828,7 +897,7 @@ textarea.input-field {
 }
 
 .glitch-hover:hover {
-  border-color: rgba(236, 109, 19, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .glitch-text:hover {
@@ -862,7 +931,7 @@ textarea.input-field {
 
 .btn-avatar:hover {
   border-color: var(--primary);
-  box-shadow: 0 0 10px rgba(236, 109, 19, 0.3);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
 /* Watch Source Button */
@@ -875,12 +944,12 @@ textarea.input-field {
   font-weight: 700;
   border-radius: 0.75rem;
   transition: all 0.2s ease;
-  box-shadow: 0 0 15px rgba(236, 109, 19, 0.3);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 .watch-source-btn:hover {
   background: var(--primary-dark);
-  box-shadow: 0 0 20px rgba(236, 109, 19, 0.5);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
 /* Link button */

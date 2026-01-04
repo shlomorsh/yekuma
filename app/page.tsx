@@ -419,9 +419,9 @@ export default function Home() {
           
           <div className="flex flex-col items-center">
             <h1 className="text-2xl font-extrabold tracking-tight uppercase">
-              <span className="text-[#ec6d13]">יקו</span>מה
+              <span className="text-white">יקו</span>מה
             </h1>
-            <div className="h-0.5 w-full bg-gradient-to-l from-transparent via-[#ec6d13] to-transparent opacity-50" />
+            <div className="h-0.5 w-full bg-gradient-to-l from-transparent via-white to-transparent opacity-30" />
           </div>
 
           {user ? (
@@ -434,7 +434,7 @@ export default function Home() {
                   <div className="text-white/60 text-xs mb-1">מחובר כ:</div>
                   <div className="text-white truncate">{user.email}</div>
                   {userProfile && (
-                    <div className="text-[#ec6d13] text-sm mt-1 font-bold">{userProfile.points || 0} נקודות</div>
+                    <div className="text-white text-sm mt-1 font-bold">{userProfile.points || 0} נקודות</div>
                   )}
                 </div>
                 <button
@@ -455,12 +455,9 @@ export default function Home() {
         {/* Hero Section - Title and Intro */}
         <section className="px-4 py-6 mb-6">
           <div className="text-center mb-4">
-            <h2 className="text-3xl font-bold mb-2 uppercase tracking-tight">
-              <span className="text-[#ec6d13]">יקו</span>מה
-            </h2>
-            <h3 className="text-lg text-white/70 mt-2">
+            <h2 className="text-xl text-white/80 font-medium">
               היקום של יקומות
-            </h3>
+            </h2>
           </div>
           <div className="text-center space-y-2 text-white/80 text-sm leading-relaxed">
             <p>ברוכים הבאים ל.. מה זה משנה בכלל???</p>
@@ -505,7 +502,7 @@ export default function Home() {
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[32px] text-[#ec6d13]/30">movie</span>
+                        <span className="material-symbols-outlined text-[32px] text-white/30">movie</span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
@@ -530,9 +527,9 @@ export default function Home() {
           <div className="flex items-center justify-between px-4 pb-3">
             <h3 className="section-title">
               <span className="material-symbols-outlined text-[#26c6da] text-lg">database</span>
-              מסד נתונים
+              דמויות
             </h3>
-            <Link href="/characters" className="text-xs text-[#ec6d13] font-medium hover:text-orange-400">
+            <Link href="/characters" className="text-xs text-white/70 font-medium hover:text-white">
               הצג הכל
             </Link>
           </div>
@@ -553,7 +550,7 @@ export default function Home() {
                   href={`/characters/${character.id}`}
                   className="flex flex-col items-center gap-2 min-w-[80px]"
                 >
-                  <div className={`avatar-circle ${index === 0 ? 'bg-gradient-to-tr from-[#ec6d13] to-transparent' : 'border border-white/15'}`}>
+                  <div className={`avatar-circle ${index === 0 ? 'bg-gradient-to-tr from-white/20 to-transparent' : 'border border-white/15'}`}>
                     <div className="avatar-circle-inner">
                       {character.image_url ? (
                         <Image
@@ -565,7 +562,7 @@ export default function Home() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-[#1e1a17]">
-                          <span className="material-symbols-outlined text-[24px] text-[#ec6d13]/50">person</span>
+                          <span className="material-symbols-outlined text-[24px] text-white/50">person</span>
                         </div>
                       )}
                     </div>
@@ -608,7 +605,7 @@ export default function Home() {
 
             <div className="stat-card">
               <div className="flex items-center gap-2 mb-2">
-                <span className="material-symbols-outlined text-[#ec6d13] text-sm">edit_note</span>
+                <span className="material-symbols-outlined text-white/70 text-sm">edit_note</span>
                 <span className="text-[10px] text-white/60 uppercase font-bold tracking-wider">עריכות יומיות</span>
               </div>
               <div className="flex items-end gap-1">
@@ -629,7 +626,7 @@ export default function Home() {
                     <div className="w-1 bg-[#26c6da] h-[60%]" />
                     <div className="w-1 bg-[#26c6da] h-[30%]" />
                     <div className="w-1 bg-[#26c6da] h-[80%]" />
-                    <div className="w-1 bg-[#ec6d13] h-[100%] animate-pulse" />
+                    <div className="w-1 bg-white/50 h-[100%] animate-pulse" />
                   </div>
                 </div>
               </div>
@@ -641,7 +638,7 @@ export default function Home() {
         <section className="mb-6 px-4">
           <div className="flex items-center justify-between pb-3">
             <h3 className="section-title">
-              <span className="material-symbols-outlined text-[#ec6d13] text-lg">public</span>
+              <span className="material-symbols-outlined text-white/70 text-lg">public</span>
               היקום
             </h3>
           </div>
@@ -671,7 +668,7 @@ export default function Home() {
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-[#1e1a17]">
-                      <span className="material-symbols-outlined text-[32px] text-[#ec6d13] opacity-30">
+                      <span className="material-symbols-outlined text-[32px] text-white opacity-30">
                         auto_awesome
                       </span>
                     </div>

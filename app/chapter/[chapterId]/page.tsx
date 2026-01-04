@@ -820,7 +820,7 @@ export default function ChapterPage() {
       <div className="min-h-screen bg-[#120e0b] text-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-xl mb-4">פרק לא נמצא</p>
-          <Link href="/" className="text-[#ec6d13] hover:underline">
+          <Link href="/" className="text-[#FFFFFF] hover:underline">
             חזרה לדף הבית
           </Link>
         </div>
@@ -852,7 +852,7 @@ export default function ChapterPage() {
           <span className="material-symbols-outlined">arrow_forward</span>
         </Link>
         <div className="flex-1 text-center px-2">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#ec6d13]">עונה 1 • פרק</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#FFFFFF]">עונה 1 • פרק</p>
           <h1 className="text-base font-bold leading-tight tracking-tight truncate">{chapter.title}</h1>
         </div>
         {user ? (
@@ -865,7 +865,7 @@ export default function ChapterPage() {
                 <div className="text-white/60 text-xs mb-1">מחובר כ:</div>
                 <div className="text-white truncate">{email}</div>
                 {userProfile && (
-                  <div className="text-[#ec6d13] text-sm mt-1 font-bold">{userProfile.points || 0} נקודות</div>
+                  <div className="text-[#FFFFFF] text-sm mt-1 font-bold">{userProfile.points || 0} נקודות</div>
                 )}
               </div>
               <button
@@ -959,7 +959,7 @@ export default function ChapterPage() {
                     <div className="h-px w-full bg-white" />
                   </div>
                 </div>
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-[#1e1a17] border border-[#ec6d13] px-4 py-2 rounded-lg text-[#ec6d13] text-sm font-bold">
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-[#1e1a17] border border-[#FFFFFF] px-4 py-2 rounded-lg text-[#FFFFFF] text-sm font-bold">
                   מצב כיוון - לחץ על הווידאו להוספת רפרנס
                 </div>
                 <button
@@ -979,7 +979,7 @@ export default function ChapterPage() {
               {references.map((ref) => (
                 <div
                   key={ref.id}
-                  className="absolute bottom-2 w-3 h-3 bg-[#ec6d13] rounded-full animate-pulse"
+                  className="absolute bottom-2 w-3 h-3 bg-[#FFFFFF] rounded-full animate-pulse"
                   style={{
                     left: `${Math.min((ref.timestamp / 600) * 100, 98)}%`,
                     transform: 'translateX(-50%)',
@@ -1021,7 +1021,7 @@ export default function ChapterPage() {
           <div className="sticky top-[69px] z-30 bg-[#120e0b]/95 backdrop-blur-md pt-3 pb-2 px-4 border-b border-white/10">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#ec6d13] text-base">dataset</span>
+                <span className="material-symbols-outlined text-[#FFFFFF] text-base">dataset</span>
                 רפרנסים מפוענחים
               </h3>
               <span className="text-[10px] bg-[#1e1a17] text-white/50 px-2 py-0.5 rounded font-mono">שידור_חי</span>
@@ -1080,7 +1080,7 @@ export default function ChapterPage() {
         <section className="mt-4 px-4 pb-8">
           <div className="flex items-center justify-between mb-3">
             <h3 className="section-title">
-              <span className="material-symbols-outlined text-[#ec6d13] text-base">military_tech</span>
+              <span className="material-symbols-outlined text-[#FFFFFF] text-base">military_tech</span>
               ארכיונאים מובילים
             </h3>
           </div>
@@ -1089,7 +1089,7 @@ export default function ChapterPage() {
               <div key={contributor.id} className="flex flex-col items-center gap-1 shrink-0 w-16">
                 <div className="relative">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
-                    index === 0 ? 'bg-[#ec6d13] text-white border-2 border-[#ec6d13]' : 'bg-[#1e1a17] text-white/70 border-2 border-white/20'
+                    index === 0 ? 'bg-[#FFFFFF] text-white border-2 border-[#FFFFFF]' : 'bg-[#1e1a17] text-white/70 border-2 border-white/20'
                   }`}>
                     {contributor.username?.charAt(0).toUpperCase() || '?'}
                   </div>

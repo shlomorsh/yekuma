@@ -9,11 +9,13 @@ export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [user, setUser] = useState<any>(null);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const usernameToEmail = (username: string) => {
     let cleanUsername = username.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
@@ -83,6 +85,78 @@ export default function LoginPage() {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!username.trim()) {
+      setMessage("אנא הכנס שם משתמש");
+      return;
+    }
+
+    if (!password.trim()) {
+      setMessage("אנא הכנס סיסמה");
+      return;
+    }
+
+    if (password.length < 6) {
+      setMessage("הסיסמה חייבת להכיל לפחות 6 תווים");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setMessage("הסיסמאות לא תואמות");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setMessage("");
+
+      const email = usernameToEmail(username);
+
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        setMessage('שגיאה בהרשמה: ' + error.message);
+        return;
+      }
+
+      if (data?.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ 
+            id: data.user.id, 
+            username: username,
+            points: 0 
+          }]);
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
+
+        setMessage("ההרשמה הצליחה! מתחבר...");
+        setTimeout(async () => {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+          });
+
+          if (!signInError) {
+            router.push("/");
+          }
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setMessage('שגיאה בלתי צפויה');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (user) {
     return null;
   }
@@ -117,17 +191,16 @@ export default function LoginPage() {
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-[#120e0b]/30 via-[#120e0b]/60 to-[#120e0b]" />
-          <div className="absolute inset-0 bg-[#ec6d13]/10 mix-blend-overlay" />
+          <div className="absolute inset-0 bg-[#FFFFFF]/10 mix-blend-overlay" />
         </div>
         
         <div className="relative z-10 px-6 pb-6 text-center">
           <h1 className="text-5xl font-bold tracking-tight mb-2 drop-shadow-lg">יקומות</h1>
-          <p className="text-white/70 text-base font-medium tracking-wide">מתעדים את היקום, אקורד אחד בכל פעם.</p>
           
           {/* Chord decoration */}
           <div className="mt-6 mb-2 flex flex-col items-center justify-center opacity-90">
-            <p className="text-[10px] text-[#ec6d13]/60 tracking-[0.2em] mb-1 font-bold uppercase">שיר פתיחה</p>
-            <div className="flex items-baseline gap-6 text-[#ec6d13] font-mono text-xl font-bold tracking-wider relative px-4 py-2 rounded-lg bg-[#1e1a17]/30 border border-white/5 backdrop-blur-sm">
+            <p className="text-[10px] text-[#FFFFFF]/60 tracking-[0.2em] mb-1 font-bold uppercase">שיר פתיחה</p>
+            <div className="flex items-baseline gap-6 text-[#FFFFFF] text-xl font-bold tracking-wider relative px-4 py-2 rounded-lg bg-[#1e1a17]/30 border border-white/5 backdrop-blur-sm" style={{ fontFamily: 'var(--font-heebo)' }}>
               <span className="hover:text-white transition-colors cursor-default">Am</span>
               <span className="hover:text-white transition-colors cursor-default">F</span>
               <span className="hover:text-white transition-colors cursor-default">C</span>
@@ -145,27 +218,29 @@ export default function LoginPage() {
             <button
               onClick={() => setIsSignUp(false)}
               className={`relative flex h-full flex-1 items-center justify-center rounded-lg px-2 text-sm font-bold transition-all ${
-                !isSignUp ? 'bg-[#ec6d13] text-white shadow-md' : 'text-white/50 hover:text-white'
+                !isSignUp ? 'bg-[#FFFFFF] text-white shadow-md' : 'text-white/50 hover:text-white'
               }`}
             >
               כניסה
             </button>
-            <Link
-              href="/contract"
-              className={`relative flex h-full flex-1 items-center justify-center rounded-lg px-2 text-sm font-bold transition-all text-white/50 hover:text-white`}
+            <button
+              onClick={() => setIsSignUp(true)}
+              className={`relative flex h-full flex-1 items-center justify-center rounded-lg px-2 text-sm font-bold transition-all ${
+                isSignUp ? 'bg-[#FFFFFF] text-white shadow-md' : 'text-white/50 hover:text-white'
+              }`}
             >
               הרשמה
-            </Link>
+            </button>
           </div>
         </div>
 
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="flex flex-col gap-5">
+        {/* Login/SignUp Form */}
+        <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="flex flex-col gap-5">
           {/* Username Field */}
           <div className="group">
             <label className="block text-white/90 text-sm font-bold mb-2 pr-1">שם משתמש</label>
             <div className="relative flex items-center">
-              <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-white/40 group-focus-within:text-[#ec6d13] transition-colors">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-white/40 group-focus-within:text-[#FFFFFF] transition-colors">
                 <span className="material-symbols-outlined">person</span>
               </div>
               <input
@@ -188,12 +263,14 @@ export default function LoginPage() {
           <div className="group">
             <div className="flex justify-between items-center mb-2 pr-1">
               <label className="block text-white/90 text-sm font-bold">סיסמה</label>
-              <button type="button" className="text-xs text-[#ec6d13] hover:text-orange-400 transition-colors font-medium">
-                שכחת סיסמה?
-              </button>
+              {!isSignUp && (
+                <button type="button" className="text-xs text-[#FFFFFF] hover:text-white transition-colors font-medium">
+                  שכחת סיסמה?
+                </button>
+              )}
             </div>
             <div className="relative flex items-center">
-              <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-white/40 group-focus-within:text-[#ec6d13] transition-colors">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-white/40 group-focus-within:text-[#FFFFFF] transition-colors">
                 <span className="material-symbols-outlined">lock</span>
               </div>
               <input
@@ -207,7 +284,8 @@ export default function LoginPage() {
                 className="input-field pr-12 pl-12 text-left"
                 dir="ltr"
                 required
-                autoComplete="current-password"
+                autoComplete={isSignUp ? "new-password" : "current-password"}
+                minLength={isSignUp ? 6 : undefined}
               />
               <button
                 type="button"
@@ -221,9 +299,43 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Confirm Password Field (only for sign up) */}
+          {isSignUp && (
+            <div className="group">
+              <label className="block text-white/90 text-sm font-bold mb-2 pr-1">אימות סיסמה</label>
+              <div className="relative flex items-center">
+                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-white/40 group-focus-within:text-[#FFFFFF] transition-colors">
+                  <span className="material-symbols-outlined">lock</span>
+                </div>
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setMessage("");
+                  }}
+                  placeholder="••••••••"
+                  className="input-field pr-12 pl-12 text-left"
+                  dir="ltr"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 left-0 flex items-center pl-4 text-white/40 hover:text-white transition-colors"
+                >
+                  <span className="material-symbols-outlined">
+                    {showConfirmPassword ? 'visibility' : 'visibility_off'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Error Message */}
           {message && (
-            <p className={`text-sm text-center ${message.includes("הצלח") ? "text-green-400" : "text-[#ef4444]"}`}>
+            <p className={`text-sm text-center ${message.includes("הצלח") || message.includes("מתחבר") ? "text-green-400" : "text-[#ef4444]"}`}>
               {message}
             </p>
           )}
@@ -234,7 +346,7 @@ export default function LoginPage() {
             disabled={loading}
             className="btn-primary w-full mt-4 py-4 text-base group"
           >
-            <span>{loading ? "מתחבר..." : "התחבר ליקום"}</span>
+            <span>{loading ? (isSignUp ? "נרשם..." : "מתחבר...") : (isSignUp ? "הרשמה" : "התחבר ליקום")}</span>
             <span className="material-symbols-outlined group-hover:-translate-x-1 transition-transform rtl:rotate-180">
               arrow_right_alt
             </span>
@@ -263,13 +375,19 @@ export default function LoginPage() {
         </div>
 
         {/* Terms */}
-        <div className="mt-auto pt-8 text-center">
-          <p className="text-xs text-white/30">
-            בלחיצה על התחברות, אתה מסכים{' '}
-            <a href="#" className="underline hover:text-[#ec6d13] transition-colors">לתנאי השימוש</a>{' '}
-            שלנו
-          </p>
-        </div>
+        {!isSignUp && (
+          <div className="mt-auto pt-8 text-center">
+            <p className="text-xs text-white/30">
+              אין לך חשבון?{' '}
+              <button 
+                onClick={() => setIsSignUp(true)}
+                className="text-[#FFFFFF] hover:underline transition-colors"
+              >
+                הרשמה
+              </button>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

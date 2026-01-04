@@ -299,7 +299,7 @@ export default function CharacterPage() {
       <div className="min-h-screen bg-[#120e0b] text-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-xl mb-4">דמות לא נמצאה</p>
-          <Link href="/characters" className="text-[#ec6d13] hover:underline">
+          <Link href="/characters" className="text-[#FFFFFF] hover:underline">
             חזרה לרשימת הדמויות
           </Link>
         </div>
@@ -326,10 +326,10 @@ export default function CharacterPage() {
                 setShowLinkRefModal(true);
                 fetchAvailableReferences();
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#ec6d13]/10 hover:bg-[#ec6d13]/20 border border-[#ec6d13]/30 rounded-full transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-[#FFFFFF]/10 hover:bg-[#FFFFFF]/20 border border-[#FFFFFF]/30 rounded-full transition-all"
             >
-              <span className="material-symbols-outlined text-[#ec6d13] text-lg">link</span>
-              <span className="text-[#ec6d13] text-sm font-bold">קשר</span>
+              <span className="material-symbols-outlined text-[#FFFFFF] text-lg">link</span>
+              <span className="text-[#FFFFFF] text-sm font-bold">קשר</span>
             </button>
           )}
         </div>
@@ -340,8 +340,8 @@ export default function CharacterPage() {
         <div className="flex flex-col items-center">
           {/* Image Container with glow effect */}
           <div className="relative group cursor-pointer mb-6">
-            <div className="absolute -inset-0.5 bg-gradient-to-l from-[#ec6d13] to-orange-600 rounded-xl opacity-75 blur group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
-            <div className="relative aspect-[3/4] w-40 rounded-xl bg-[#1e1a17] overflow-hidden border-2 border-[#ec6d13]/20">
+            <div className="absolute -inset-0.5 bg-gradient-to-l from-[#FFFFFF] to-white/80 rounded-xl opacity-75 blur group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+            <div className="relative aspect-[3/4] w-40 rounded-xl bg-[#1e1a17] overflow-hidden border-2 border-[#FFFFFF]/20">
               {character.image_url ? (
                 <Image
                   src={character.image_url}
@@ -351,7 +351,7 @@ export default function CharacterPage() {
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[64px] text-[#ec6d13]/30">person</span>
+                  <span className="material-symbols-outlined text-[64px] text-[#FFFFFF]/30">person</span>
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#120e0b] via-transparent to-transparent opacity-60" />
@@ -368,7 +368,7 @@ export default function CharacterPage() {
               {character.title}
             </h1>
             {character.description && (
-              <p className="text-[#ec6d13] font-medium tracking-wide text-xs uppercase opacity-90">
+              <p className="text-[#FFFFFF] font-medium tracking-wide text-xs uppercase opacity-90">
                 {character.description}
               </p>
             )}
@@ -417,14 +417,14 @@ export default function CharacterPage() {
         <section className="grid grid-cols-2 gap-3">
           <div className="stat-card">
             <div className="absolute top-0 left-0 p-1 opacity-20">
-              <span className="material-symbols-outlined text-[#ec6d13] text-lg">fingerprint</span>
+              <span className="material-symbols-outlined text-[#FFFFFF] text-lg">fingerprint</span>
             </div>
             <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">סוג</p>
             <p className="text-white font-medium text-sm">דמות</p>
           </div>
           <div className="stat-card">
             <div className="absolute top-0 left-0 p-1 opacity-20">
-              <span className="material-symbols-outlined text-[#ec6d13] text-lg">movie</span>
+              <span className="material-symbols-outlined text-[#FFFFFF] text-lg">movie</span>
             </div>
             <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest">הופעות</p>
             <p className="text-white font-medium text-sm">{references.length} רפרנסים</p>
@@ -460,15 +460,15 @@ export default function CharacterPage() {
             ) : (
               <section className="space-y-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="material-symbols-outlined text-[#ec6d13] text-lg">terminal</span>
+                  <span className="material-symbols-outlined text-[#FFFFFF] text-lg">terminal</span>
                   <h3 className="text-lg font-bold uppercase tracking-tight">יומן נתונים</h3>
                 </div>
                 
                 {Object.keys(contentSections).length > 0 ? (
-                  <div className="text-white/80 text-sm leading-relaxed space-y-4 bg-[#1e1a17]/30 p-4 rounded-lg border-r-2 border-[#ec6d13]/50">
+                  <div className="text-white/80 text-sm leading-relaxed space-y-4 bg-[#1e1a17]/30 p-4 rounded-lg border-r-2 border-[#FFFFFF]/50">
                     {Object.entries(contentSections).map(([section, content]) => (
                       <div key={section}>
-                        <h4 className="font-bold text-[#ec6d13] mb-2">{section}</h4>
+                        <h4 className="font-bold text-[#FFFFFF] mb-2">{section}</h4>
                         {content.split('\n').map((line, i) => (
                           <p key={i} className="mb-2">{line}</p>
                         ))}
@@ -476,7 +476,7 @@ export default function CharacterPage() {
                     ))}
                   </div>
                 ) : character.description ? (
-                  <div className="text-white/80 text-sm leading-relaxed bg-[#1e1a17]/30 p-4 rounded-lg border-r-2 border-[#ec6d13]/50">
+                  <div className="text-white/80 text-sm leading-relaxed bg-[#1e1a17]/30 p-4 rounded-lg border-r-2 border-[#FFFFFF]/50">
                     <p>{character.description}</p>
                   </div>
                 ) : (
@@ -504,7 +504,7 @@ export default function CharacterPage() {
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#ec6d13] text-lg">verified</span>
+                <span className="material-symbols-outlined text-[#FFFFFF] text-lg">verified</span>
                 <h3 className="text-lg font-bold uppercase tracking-tight">אזכורים מאומתים</h3>
               </div>
             </div>
@@ -543,7 +543,7 @@ export default function CharacterPage() {
                   setShowLinkRefModal(true);
                   fetchAvailableReferences();
                 }}
-                className="w-full py-3 text-xs font-bold text-white/50 uppercase tracking-widest hover:text-[#ec6d13] transition-colors border border-dashed border-white/20 hover:border-[#ec6d13]/50 rounded-lg"
+                className="w-full py-3 text-xs font-bold text-white/50 uppercase tracking-widest hover:text-[#FFFFFF] transition-colors border border-dashed border-white/20 hover:border-[#FFFFFF]/50 rounded-lg"
               >
                 + הוסף רפרנס
               </button>
@@ -555,7 +555,7 @@ export default function CharacterPage() {
         {activeTab === 'gallery' && (
           <section className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#ec6d13] text-lg">image</span>
+              <span className="material-symbols-outlined text-[#FFFFFF] text-lg">image</span>
               <h3 className="text-lg font-bold uppercase tracking-tight">מאגר חזותי</h3>
             </div>
             

@@ -65,9 +65,9 @@ export default function UniversePage() {
                 
                 <div className="flex flex-col items-center">
                     <h1 className="text-2xl font-extrabold tracking-tight uppercase">
-                        <span className="text-[#ec6d13]">יקו</span>מות
+                        <span className="text-[#FFFFFF]">יקו</span>מות
                     </h1>
-                    <div className="h-0.5 w-full bg-gradient-to-l from-transparent via-[#ec6d13] to-transparent opacity-50" />
+                    <div className="h-0.5 w-full bg-gradient-to-l from-transparent via-[#FFFFFF] to-transparent opacity-50" />
                 </div>
 
                 {user && (
@@ -115,7 +115,7 @@ export default function UniversePage() {
                                     />
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center bg-[#1e1a17]">
-                                        <span className="material-symbols-outlined text-[48px] text-[#ec6d13]/30">auto_awesome</span>
+                                        <span className="material-symbols-outlined text-[48px] text-[#FFFFFF]/30">auto_awesome</span>
                                     </div>
                                 )}
                                 {item.verified && (
@@ -155,7 +155,7 @@ export default function UniversePage() {
                         <span className="material-symbols-outlined">auto_awesome</span>
                         <span className="text-[10px] font-bold">יקום</span>
                     </Link>
-                    <Link href={user ? "#" : "/login"} className="bottom-nav-item">
+                    <Link href="/login" className="bottom-nav-item">
                         <span className="material-symbols-outlined">person</span>
                         <span className="text-[10px] font-medium">פרופיל</span>
                     </Link>

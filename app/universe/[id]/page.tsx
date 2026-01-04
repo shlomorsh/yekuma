@@ -276,7 +276,7 @@ export default function UniverseItemPage() {
             <div className="min-h-screen bg-[#120e0b] text-white flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-xl mb-4">פריט לא נמצא</p>
-                    <Link href="/universe" className="text-[#ec6d13] hover:underline">
+                    <Link href="/universe" className="text-[#FFFFFF] hover:underline">
                         חזרה ליקום
                     </Link>
                 </div>
@@ -301,7 +301,7 @@ export default function UniverseItemPage() {
                 </Link>
                 <div className="flex flex-col items-center">
                     <h1 className="text-xl font-extrabold tracking-tight uppercase">
-                        <span className="text-[#ec6d13]">יקו</span>מות
+                        <span className="text-[#FFFFFF]">יקו</span>מות
                     </h1>
                 </div>
                 {user && (
@@ -448,7 +448,7 @@ export default function UniverseItemPage() {
                                     <div className="space-y-6">
                                         {Object.entries(contentSections).map(([section, content]) => (
                                             <div key={section} className="surface-card p-6">
-                                                <h3 className="text-xl font-bold mb-4 text-[#ec6d13] border-b border-[#ec6d13]/30 pb-2">
+                                                <h3 className="text-xl font-bold mb-4 text-[#FFFFFF] border-b border-[#FFFFFF]/30 pb-2">
                                                     {section}
                                                 </h3>
                                                 <div className="text-white/90 text-base leading-relaxed">
