@@ -419,7 +419,7 @@ export default function Home() {
           
           <div className="flex flex-col items-center">
             <h1 className="text-2xl font-extrabold tracking-tight uppercase">
-              <span className="text-[#ec6d13]">יקו</span>מות
+              <span className="text-[#ec6d13]">יקו</span>מה
             </h1>
             <div className="h-0.5 w-full bg-gradient-to-l from-transparent via-[#ec6d13] to-transparent opacity-50" />
           </div>
@@ -456,8 +456,11 @@ export default function Home() {
         <section className="px-4 py-6 mb-6">
           <div className="text-center mb-4">
             <h2 className="text-3xl font-bold mb-2 uppercase tracking-tight">
-              <span className="text-[#ec6d13]">יקו</span>מה - היקום של יקומות
+              <span className="text-[#ec6d13]">יקו</span>מה
             </h2>
+            <h3 className="text-lg text-white/70 mt-2">
+              היקום של יקומות
+            </h3>
           </div>
           <div className="text-center space-y-2 text-white/80 text-sm leading-relaxed">
             <p>ברוכים הבאים ל.. מה זה משנה בכלל???</p>
