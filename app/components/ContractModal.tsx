@@ -25,7 +25,7 @@ export default function ContractModal({ isOpen, onClose }: ContractModalProps) {
         dir="rtl"
       >
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
+          <h2 className="text-2xl font-bold mb-4" style={{ color: '#FFFFFF', fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif' }}>
             התחברות
           </h2>
           <p className="text-lg mb-6" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>

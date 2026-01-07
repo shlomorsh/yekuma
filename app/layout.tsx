@@ -42,7 +42,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${rubik.variable} ${heebo.variable} ${assistant.variable} antialiased`}
-        style={{ fontFamily: 'var(--font-rubik), var(--font-heebo), sans-serif' }}
+        style={{ fontFamily: '"Reisinger-Michal", var(--font-rubik), var(--font-heebo), sans-serif' }}
       >
         {/* Scanlines overlay for retro effect */}
         <div className="scanlines" />

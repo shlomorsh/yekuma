@@ -96,7 +96,7 @@ ${formData.first_appearance ? `## הופעה ראשונה\n${formData.first_appe
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: 'var(--font-heebo)' }}>
+      <div className="min-h-screen bg-black text-white flex items-center justify-center" style={{ fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif' }}>
         <div className="text-center">
           <p className="text-xl mb-4" style={{ color: '#FFFFFF' }}>אתה צריך להתחבר כדי ליצור דמות</p>
           <Link href="/" className="btn-link" style={{ fontFamily: 'var(--font-mono)' }}>
@@ -108,13 +108,13 @@ ${formData.first_appearance ? `## הופעה ראשונה\n${formData.first_appe
   }
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
+    <div className="min-h-screen bg-black text-white" style={{ fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif' }}>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Link href="/characters" className="wireframe-border px-3 py-1 mb-6 inline-block" style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
           ← חזרה לדמויות
         </Link>
 
-        <h1 className="text-4xl font-bold mb-8 glitch-text" style={{ color: '#FFFFFF', fontFamily: 'var(--font-heebo)' }}>
+        <h1 className="text-4xl font-bold mb-8 glitch-text" style={{ color: '#FFFFFF', fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif' }}>
           הוסף דמות חדשה
         </h1>
 
@@ -129,7 +129,7 @@ ${formData.first_appearance ? `## הופעה ראשונה\n${formData.first_appe
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
               className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none"
-              style={{ fontFamily: 'var(--font-heebo)' }}
+              style={{ fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif' }}
               placeholder="שם הדמות"
             />
           </div>
@@ -143,7 +143,7 @@ ${formData.first_appearance ? `## הופעה ראשונה\n${formData.first_appe
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
               className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none resize-none"
-              style={{ fontFamily: 'var(--font-heebo)' }}
+              style={{ fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif' }}
               placeholder="תיאור קצר של הדמות"
             />
           </div>
@@ -157,7 +157,7 @@ ${formData.first_appearance ? `## הופעה ראשונה\n${formData.first_appe
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none"
-              style={{ fontFamily: 'var(--font-heebo)' }}
+              style={{ fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif' }}
               placeholder="מה התפקיד של הדמות?"
             />
           </div>
@@ -171,7 +171,7 @@ ${formData.first_appearance ? `## הופעה ראשונה\n${formData.first_appe
               value={formData.first_appearance}
               onChange={(e) => setFormData({ ...formData, first_appearance: e.target.value })}
               className="w-full bg-black wireframe-border px-4 py-2 text-white focus:outline-none"
-              style={{ fontFamily: 'var(--font-heebo)' }}
+              style={{ fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif' }}
               placeholder="איפה הדמות הופיעה לראשונה?"
             />
           </div>

@@ -163,7 +163,7 @@ export default function ImageUploader({ value, onChange, aspectRatio = 1 }: Imag
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <div className="space-y-2">
-                  <p className="text-white" style={{ fontFamily: 'var(--font-heebo)' }}>
+                  <p className="text-white" style={{ fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif' }}>
                     גרור תמונה לכאן או לחץ להעלאה
                   </p>
                   <p className="text-sm text-zinc-400" style={{ fontFamily: 'var(--font-mono)' }}>

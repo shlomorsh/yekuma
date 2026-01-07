@@ -399,7 +399,7 @@ export default function UniverseItemPage() {
                         ) : isEioro ? (
                             // Special rendering for Eioro Chords
                             <section className="surface-card p-8">
-                                <div style={{ fontFamily: 'var(--font-heebo)', whiteSpace: 'pre', textAlign: 'right', color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.1' }}>
+                                <div style={{ fontFamily: '"Reisinger-Michal", var(--font-heebo), sans-serif', whiteSpace: 'pre', textAlign: 'right', color: '#FFFFFF', fontSize: '1rem', lineHeight: '1.1' }}>
                                     {Object.entries(contentSections).map(([section, content]) => {
                                         const lines = content.split('\n').filter(line => line.trim());
                                         return (

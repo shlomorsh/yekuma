@@ -1,3 +1,31 @@
+/* ============================================
+   REISINGER MICHAL FONT FACE
+   ============================================ */
+
+@font-face {
+  font-family: 'Reisinger-Michal';
+  src: url('/Reisinger-Michal/Reisinger-Michal-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Reisinger-Michal';
+  src: url('/Reisinger-Michal/Reisinger-Michal-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Reisinger-Michal';
+  src: url('/Reisinger-Michal/Reisinger-Michal-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import "tailwindcss";
 
 :root {
@@ -26,16 +54,16 @@
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
   --color-surface: var(--surface);
-  --font-sans: "Rubik", var(--font-heebo), var(--font-assistant), sans-serif;
+  --font-sans: "Reisinger-Michal", "Rubik", var(--font-heebo), var(--font-assistant), sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "Courier New", monospace;
-  --font-display: "Rubik", "Plus Jakarta Sans", sans-serif;
+  --font-display: "Reisinger-Michal", "Rubik", "Plus Jakarta Sans", sans-serif;
 }
 
 /* Base styles */
 body {
   background: var(--background-dark);
   color: #FFFFFF;
-  font-family: "Rubik", var(--font-heebo), var(--font-assistant), sans-serif;
+  font-family: "Reisinger-Michal", "Rubik", var(--font-heebo), var(--font-assistant), sans-serif;
   direction: rtl;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
