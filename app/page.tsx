@@ -52,6 +52,7 @@ export default function Home() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
   
   // Audio ref for random sound effects
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -280,10 +281,16 @@ export default function Home() {
         }
 
         if (chaptersError) {
+          console.error('Error fetching chapters:', chaptersError);
+          console.error('Error details:', JSON.stringify(chaptersError, null, 2));
+          setDataError(chaptersError.message || 'שגיאה בטעינת נתונים');
           setChapters([]);
         } else if (chaptersData && chaptersData.length > 0) {
+          console.log('Chapters loaded successfully:', chaptersData.length);
           setChapters(chaptersData);
+          setDataError(null);
         } else {
+          console.log('No chapters found in database');
           setChapters([]);
         }
 
@@ -345,8 +352,11 @@ export default function Home() {
         }
 
         if (error) {
+          console.error('Error fetching characters:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
           setCharacters([]);
         } else {
+          console.log('Characters loaded successfully:', (data || []).length);
           setCharacters(data || []);
         }
       } catch (err) {
@@ -377,12 +387,16 @@ export default function Home() {
           ]) as any;
 
           if (result.error) {
+            console.error('Error fetching wiki items:', result.error);
+            console.error('Error details:', JSON.stringify(result.error, null, 2));
             setWikiItems([]);
           } else {
+            console.log('Wiki items loaded successfully:', (result.data || []).length);
             const shuffled = (result.data || []).sort(() => Math.random() - 0.5);
             setWikiItems(shuffled);
           }
         } catch (err: any) {
+          console.error('Error fetching wiki items:', err);
           setWikiItems([]);
         }
       } catch (err) {
@@ -484,7 +498,15 @@ export default function Home() {
             </div>
           ) : chapters.length === 0 ? (
             <div className="text-center py-12 text-white/40">
-              <p>אין פרקים זמינים</p>
+              {dataError ? (
+                <div className="text-center">
+                  <p className="text-red-400 mb-2">שגיאה בטעינת נתונים</p>
+                  <p className="text-sm text-white/60">{dataError}</p>
+                  <p className="text-xs text-white/40 mt-2">בדוק את הקונסול לפרטים נוספים</p>
+                </div>
+              ) : (
+                <p>אין פרקים זמינים</p>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
