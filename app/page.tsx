@@ -51,6 +51,7 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
   // Audio ref for random sound effects
   const audioRef = useRef<HTMLAudioElement | null>(null);

@@ -19,6 +19,7 @@ export default function UniversePage() {
     const [items, setItems] = useState<UniverseItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     useEffect(() => {
         const checkSession = async () => {
@@ -159,12 +160,12 @@ export default function UniversePage() {
                     <button onClick={() => setShowLoginModal(true)} className="bottom-nav-item">
                         <span className="material-symbols-outlined">person</span>
                         <span className="text-[10px] font-medium">פרופיל</span>
-                    </Link>
+                    </button>
                 </div>
                 <div className="h-4 w-full" />
             </div>
+
+            <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
         </div>
-        <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
-    </div>
     );
 }
