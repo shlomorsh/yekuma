@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import LoginModal from "./components/LoginModal";
 
 interface Chapter {
   id: string;
@@ -446,9 +447,9 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <Link href="/login" className="btn-icon">
+            <button onClick={() => setShowLoginModal(true)} className="btn-icon">
               <span className="material-symbols-outlined">person</span>
-            </Link>
+            </button>
           )}
         </div>
 
@@ -697,14 +698,15 @@ export default function Home() {
               <span className="material-symbols-outlined">menu_book</span>
               <span className="text-[10px] font-medium">ויקי</span>
             </Link>
-            <Link href="/login" className="bottom-nav-item">
+            <button onClick={() => setShowLoginModal(true)} className="bottom-nav-item">
               <span className="material-symbols-outlined">person</span>
               <span className="text-[10px] font-medium">פרופיל</span>
-            </Link>
+            </button>
           </div>
           <div className="h-4 w-full" />
         </div>
       </div>
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );
 }

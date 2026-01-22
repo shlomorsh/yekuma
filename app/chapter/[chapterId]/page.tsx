@@ -69,8 +69,6 @@ export default function ChapterPage() {
   const [showLinkedRefsModal, setShowLinkedRefsModal] = useState(false);
   const [availableReferences, setAvailableReferences] = useState<Reference[]>([]);
   const [loadingLinkedRefs, setLoadingLinkedRefs] = useState(false);
-  const [targetingMode, setTargetingMode] = useState(false);
-  const [crosshairPosition, setCrosshairPosition] = useState({ x: 0, y: 0 });
   const [isEditingReference, setIsEditingReference] = useState(false);
   const [editReferenceData, setEditReferenceData] = useState({
     title: "",
@@ -406,16 +404,20 @@ export default function ChapterPage() {
       setShowLoginModal(true);
       return;
     }
-    setTargetingMode(true);
+
+    // לכוד את הזמן הנוכחי של הסרטון ופתח את הטופס ישירות
+    let currentTime = 0;
+    if (playerRef.current && isReady) {
+      // עבור ReactPlayer נשתמש ב-getCurrentTime
+      if (typeof playerRef.current.getCurrentTime === "function") {
+        currentTime = Math.floor(playerRef.current.getCurrentTime());
+      } else if (typeof playerRef.current.currentTime === "number") {
+        currentTime = Math.floor(playerRef.current.currentTime);
+      }
+    }
+
+    // עצור את הסרטון
     setPlaying(false);
-  };
-
-  const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!targetingMode || !playerRef.current || !isReady) return;
-
-    const currentTime = typeof playerRef.current.currentTime === "number" 
-      ? Math.floor(playerRef.current.currentTime)
-      : 0;
 
     setFormData({
       timestamp: currentTime,
@@ -423,17 +425,7 @@ export default function ChapterPage() {
       description: "",
       imageUrl: "https://via.placeholder.com/400x300/1f2937/9ca3af?text=רפרנס+חדש"
     });
-    setTargetingMode(false);
     setShowAddForm(true);
-  };
-
-  const handleVideoMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!targetingMode) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    setCrosshairPosition({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
   };
 
   const handleSaveReference = async (e: React.FormEvent) => {
@@ -556,6 +548,16 @@ export default function ChapterPage() {
           user_id: user.id
         }]);
 
+      // Get previous count to check if this verification will make it verified
+      const { data: refData } = await supabase
+        .from('references')
+        .select('verification_count, verified')
+        .eq('id', referenceId)
+        .single();
+
+      const previousCount = refData?.verification_count || 0;
+      const wasVerified = refData?.verified || false;
+
       const { count } = await supabase
         .from('verifications')
         .select('id', { count: 'exact', head: true })
@@ -572,6 +574,24 @@ export default function ChapterPage() {
         })
         .eq('id', referenceId);
 
+      // Award 1 point to the verifier
+      await supabase.rpc('increment_points', {
+        user_id_param: user.id,
+        points_to_add: 1
+      });
+
+      // Award 5 points to the creator if this verification makes the reference verified (reaches 2+ verifications)
+      if (isVerified && !wasVerified) {
+        await supabase.rpc('increment_points', {
+          user_id_param: creatorUserId,
+          points_to_add: 5
+        });
+      }
+
+      alert(isVerified && !wasVerified 
+        ? 'האימות נשמר! קיבלת 1 נקודה, והיוצר קיבל 5 נקודות כי הרפרנס מאומת עכשיו!'
+        : 'האימות נשמר! קיבלת 1 נקודה.');
+      
       window.location.reload();
     } catch (err) {
       console.error('Error verifying:', err);
@@ -888,9 +908,6 @@ export default function ChapterPage() {
         <section className="relative w-full bg-black">
           <div 
             className="aspect-video w-full bg-[#1e1a17] relative group overflow-hidden"
-            style={{ cursor: targetingMode ? 'crosshair' : 'default' }}
-            onClick={handleVideoClick}
-            onMouseMove={handleVideoMouseMove}
           >
             {chapter.video_url ? (
               <>
@@ -907,7 +924,7 @@ export default function ChapterPage() {
                   onError={(error: any) => {
                     console.error('ReactPlayer error:', error);
                   }}
-                  controls={!targetingMode}
+                  controls={true}
                   className="aspect-video"
                   config={{
                     youtube: {
@@ -921,57 +938,23 @@ export default function ChapterPage() {
                     },
                   }}
                 />
-                {!targetingMode && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMuted(!muted);
-                    }}
-                    className="absolute top-4 left-4 z-20 bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white rounded-lg p-2 transition-all"
-                    title={muted ? "הפעל קול" : "השתק"}
-                  >
-                    <span className="material-symbols-outlined">
-                      {muted ? 'volume_off' : 'volume_up'}
-                    </span>
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMuted(!muted);
+                  }}
+                  className="absolute top-4 left-4 z-20 bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white rounded-lg p-2 transition-all"
+                  title={muted ? "הפעל קול" : "השתק"}
+                >
+                  <span className="material-symbols-outlined">
+                    {muted ? 'volume_off' : 'volume_up'}
+                  </span>
+                </button>
               </>
             ) : (
               <div className="aspect-video flex items-center justify-center">
                 <span className="material-symbols-outlined text-[64px] text-white/20">movie</span>
               </div>
-            )}
-            
-            {/* Targeting Mode Overlay */}
-            {targetingMode && (
-              <>
-                <div 
-                  className="absolute w-10 h-10 border border-white rounded-full pointer-events-none z-50"
-                  style={{
-                    left: `${crosshairPosition.x - 20}px`,
-                    top: `${crosshairPosition.y - 20}px`,
-                  }}
-                >
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-px h-full bg-white" />
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="h-px w-full bg-white" />
-                  </div>
-                </div>
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-[#1e1a17] border border-[#FFFFFF] px-4 py-2 rounded-lg text-[#FFFFFF] text-sm font-bold">
-                  מצב כיוון - לחץ על הווידאו להוספת רפרנס
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setTargetingMode(false);
-                  }}
-                  className="absolute top-4 right-4 btn-secondary text-sm"
-                >
-                  ביטול
-                </button>
-              </>
             )}
 
             {/* Reference markers on timeline */}
@@ -1002,7 +985,7 @@ export default function ChapterPage() {
             </div>
             <button
               onClick={handleAddReferenceClick}
-              disabled={!isReady || targetingMode}
+              disabled={!isReady}
               className="btn-primary text-sm"
             >
               <span className="material-symbols-outlined text-lg">add</span>
@@ -1111,7 +1094,7 @@ export default function ChapterPage() {
       {/* FAB - Add Reference */}
       <button
         onClick={handleAddReferenceClick}
-        disabled={!isReady || targetingMode}
+        disabled={!isReady}
         className="fab"
       >
         <span className="material-symbols-outlined text-[28px]">add</span>

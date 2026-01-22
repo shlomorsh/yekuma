@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import LoginModal from "../components/LoginModal";
 
 interface UniverseItem {
     id: string;
@@ -155,7 +156,7 @@ export default function UniversePage() {
                         <span className="material-symbols-outlined">auto_awesome</span>
                         <span className="text-[10px] font-bold">יקום</span>
                     </Link>
-                    <Link href="/login" className="bottom-nav-item">
+                    <button onClick={() => setShowLoginModal(true)} className="bottom-nav-item">
                         <span className="material-symbols-outlined">person</span>
                         <span className="text-[10px] font-medium">פרופיל</span>
                     </Link>
@@ -163,5 +164,7 @@ export default function UniversePage() {
                 <div className="h-4 w-full" />
             </div>
         </div>
+        <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+    </div>
     );
 }

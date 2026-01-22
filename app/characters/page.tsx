@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import LoginModal from "../components/LoginModal";
 
 interface Character {
   id: string;
@@ -19,6 +20,7 @@ export default function CharactersPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -177,13 +179,14 @@ export default function CharactersPage() {
             <span className="material-symbols-outlined">menu_book</span>
             <span className="text-[10px] font-bold">ויקי</span>
           </button>
-          <Link href="/login" className="bottom-nav-item">
+          <button onClick={() => setShowLoginModal(true)} className="bottom-nav-item">
             <span className="material-symbols-outlined">person</span>
             <span className="text-[10px] font-medium">פרופיל</span>
-          </Link>
+          </button>
         </div>
         <div className="h-4 w-full" />
       </div>
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
     </div>
   );
 }
