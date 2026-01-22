@@ -80,11 +80,11 @@ ${formData.first_appearance ? `## הופעה ראשונה\n${formData.first_appe
       // Award points
       await supabase.rpc('award_wiki_points', {
         user_id_param: user.id,
-        points_to_add: 10,
+        points_to_add: 5,
         reason: 'יצירת דמות חדשה'
       });
 
-      alert('הדמות נוצרה בהצלחה! קיבלת 10 נקודות.');
+      alert('הדמות נוצרה בהצלחה! קיבלת 5 נקודות.');
       router.push(`/characters/${data.id}`);
     } catch (err) {
       console.error('Error creating character:', err);
